@@ -1,4 +1,4 @@
-# ISO/IEC 27001:2022 Ultimate Platform
+# ISO 27001 Ultimate Platform
 
 ## ISO/IEC 27001:2022 ISMS Audit & Compliance Platform
 
@@ -99,7 +99,7 @@ The platform supports extraction of professional deliverables:
 ## Platform Architecture
 
 ```text
-iso27001-platform/
+ISO 27001 Ultimate Platform/
 │
 ├── index.html                 # Main ISMS platform
 ├── assets/
