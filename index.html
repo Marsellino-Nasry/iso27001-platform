@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate ISO 27001:2022 Audit & Compliance Platform - Marsellino Nasry</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- JS Libraries for Reporting & Charts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #e2e8f0; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1), padding 0.5s ease-in-out; padding: 0 1.5rem; }
+        .accordion-content.open { max-height: 2500px; padding: 1rem 1.5rem 1.5rem; }
+        :focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
+        .progress-bar-inner { transition: width 0.5s ease-in-out; }
+        #header { position: sticky; top: 0; z-index: 50; background-color: rgba(2, 6, 23, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid #1e293b; }
+        .modal-overlay { transition: opacity 0.3s ease; }
+        .modal-box { transition: all 0.3s ease; }
+        .toast { transition: opacity 0.3s, transform 0.3s; }
+        .tab-button.active { background-color: #0ea5e9; color: #ffffff; }
+        #bulkActionBar { transition: transform 0.3s ease-in-out; }
+        /* Canvas for background watermark */
+        #background-watermark {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        /* Styles for the SoA Editor Modal */
+        #soaEditorTableContainer {
+            max-height: 60vh;
+            overflow-y: auto;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+        }
+        #soaEditorTable th {
+            position: sticky;
+            top: 0;
+            background-color: #1e293b;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Background Watermark Canvas -->
+    <canvas id="background-watermark"></canvas>
+
+    <div id="app" class="min-h-screen relative z-10">
+        
+        <!-- Header Section -->
+        <header id="header" class="p-4 md:p-6">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                <div class="text-center md:text-left">
+                    <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight">Marsellino Nasry</h1>
+                    <p class="text-sm md:text-base text-sky-400 font-medium">Offensive Security & ISO 27001 Specialist</p>
+                    <p class="text-xs text-slate-400 mt-1">Powered by SARM: <a href="https://marsellino-nasry.github.io" target="_blank" class="hover:underline">marsellino-nasry.github.io</a></p>
+                </div>
+                <div class="text-center md:text-right">
+                     <h2 class="text-xl md:text-2xl font-extrabold text-white">Ultimate ISO 27001:2022 Platform</h2>
+                     <p class="font-semibold text-slate-300">Audit | Compliance | Reporting</p>
+                </div>
+            </div>
+        </header>
+
+        <main class="py-8 px-4 md:px-6">
+            <div class="max-w-7xl mx-auto">
+                
+                <!-- Dashboard & Controls -->
+                <div class="bg-slate-900/80 backdrop-blur-sm p-4 sm:p-6 rounded-lg shadow-xl mb-8 sticky top-[100px] md:top-[105px] z-40 border border-slate-800">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-center">
+                        <div class="relative xl:col-span-2">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i class="fas fa-search text-slate-500"></i></span>
+                            <input type="text" id="searchInput" placeholder="Search controls by ID, title, or guidance..." class="w-full bg-slate-800 border border-slate-700 rounded-md py-2 pl-10 pr-4 text-slate-200 focus:ring-2 focus:ring-sky-500 transition">
+                        </div>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i class="fas fa-filter text-slate-500"></i></span>
+                            <select id="statusFilter" class="w-full appearance-none bg-slate-800 border border-slate-700 rounded-md py-2 pl-10 pr-4 text-slate-200 focus:ring-2 focus:ring-sky-500 transition">
+                                <option value="all">All Statuses</option>
+                                <option value="Not Implemented">Not Implemented</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Implemented">Implemented</option>
+                                <option value="N/A">N/A</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center justify-center lg:justify-end space-x-2 xl:col-span-2">
+                            <button id="soaButton" title="Generate Statement of Applicability (PDF)" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md shadow-md transition-transform transform hover:scale-105"><i class="fas fa-file-contract mr-2"></i>SoA</button>
+                            <button id="pdfButton" title="Download Summary Report (PDF)" class="px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-md shadow-md transition-transform transform hover:scale-105"><i class="fas fa-file-pdf mr-2"></i>Report</button>
+                            <button id="exportButton" title="Export Full Data to Excel" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md shadow-md transition-transform transform hover:scale-105"><i class="fas fa-file-excel mr-2"></i>Excel</button>
+                            <button id="resetButton" title="Reset All Progress" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md shadow-md transition-transform transform hover:scale-105"><i class="fas fa-sync-alt"></i></button>
+                        </div>
+                    </div>
+                    <!-- Stats & Progress Bar -->
+                    <div class="mt-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+                            <div class="lg:col-span-2">
+                                <div class="flex justify-between mb-1"><span class="text-base font-medium text-sky-400">Overall Compliance</span><span id="progressText" class="text-sm font-medium text-sky-400">0%</span></div>
+                                <div class="w-full bg-slate-700 rounded-full h-4 shadow-inner"><div id="progressBar" class="bg-gradient-to-r from-sky-500 to-cyan-400 h-4 rounded-full progress-bar-inner" style="width: 0%"></div></div>
+                                <div id="statsContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 text-center"></div>
+                            </div>
+                            <div class="relative h-48 sm:h-56">
+                                <canvas id="complianceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controls Container -->
+                <div id="controlsContainer" class="space-y-3"></div>
+                <div id="loading" class="text-center py-10"><i class="fas fa-spinner fa-spin fa-3x text-sky-500"></i><p class="mt-4 text-lg text-slate-400">Loading Platform...</p></div>
+            </div>
+        </main>
+        
+        <!-- About Section -->
+        <section class="py-16 bg-slate-900 border-t border-slate-800">
+             <div class="max-w-4xl mx-auto px-4 text-center">
+                <h3 class="text-3xl font-bold text-white mb-2">About Marsellino Nasry</h3>
+                <p class="text-sky-400 font-semibold text-lg mb-8">Elite Cybersecurity Practitioner & ISO 27001 Auditor</p>
+                <img src="https://placehold.co/128x128/1e293b/94a3b8?text=MN" alt="Marsellino Nasry" class="w-32 h-32 rounded-full mx-auto mb-6 border-4 border-slate-700 shadow-lg">
+                <p class="text-slate-300 max-w-3xl mx-auto leading-relaxed text-left md:text-center mb-8">An elite Red Team Operator and IT Auditor at BDO, I bring a potent combination of offensive security expertise and deep ISO 27001 compliance knowledge. My mission is to fortify organizations against modern cyber threats by identifying vulnerabilities, simulating real-world attacks, and ensuring robust adherence to international security standards. Recognized in the Top 1% on TryHackMe, my work safeguards critical infrastructures across the banking, petroleum, and corporate sectors.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                    <div class="bg-slate-800 p-6 rounded-lg border border-slate-700"><h4 class="font-bold text-white text-lg mb-2"><i class="fas fa-shield-halved mr-2 text-sky-400"></i>Core Expertise</h4><ul class="list-disc list-inside text-slate-400 space-y-1"><li>Offensive Security & Red Teaming</li><li>Network Penetration Testing</li><li>ISO 27001 Audits & Compliance</li><li>Vulnerability Management</li><li>IT Governance & Risk Analysis</li></ul></div>
+                    <div class="bg-slate-800 p-6 rounded-lg border border-slate-700"><h4 class="font-bold text-white text-lg mb-2"><i class="fas fa-certificate mr-2 text-sky-400"></i>Key Certifications</h4><ul class="list-disc list-inside text-slate-400 space-y-1"><li>CISSP®</li><li>PenTest+</li><li>Security+</li><li>API PenTest</li><li>TryHackMe Top 1%</li></ul></div>
+                    <div class="bg-slate-800 p-6 rounded-lg border border-slate-700"><h4 class="font-bold text-white text-lg mb-2"><i class="fas fa-building mr-2 text-sky-400"></i>Industry Experience</h4><ul class="list-disc list-inside text-slate-400 space-y-1"><li>Banking & Financial Services</li><li>Petroleum & Energy</li><li>Corporate & Enterprise</li><li>IT & Technology</li><li>Government & Public Sector</li></ul></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-slate-950 border-t border-slate-800 py-8">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <h3 class="text-2xl font-semibold text-white mb-6">Connect with Me</h3>
+                <div class="flex flex-wrap justify-center items-center gap-x-6 gap-y-4 md:gap-x-8"><a href="https://linktr.ee/Marsellino.Nasry" target="_blank" class="flex items-center space-x-2 text-slate-300 hover:text-sky-400 transition-colors group"><i class="fas fa-tree fa-lg"></i><span class="font-medium group-hover:underline">Linktree</span></a><a href="https://www.linkedin.com/in/marsellino-nasry/" target="_blank" class="flex items-center space-x-2 text-slate-300 hover:text-sky-400 transition-colors group"><i class="fab fa-linkedin fa-lg"></i><span class="font-medium group-hover:underline">LinkedIn</span></a><a href="https://wa.me/201019392651" target="_blank" class="flex items-center space-x-2 text-slate-300 hover:text-sky-400 transition-colors group"><i class="fab fa-whatsapp fa-lg"></i><span class="font-medium group-hover:underline">WhatsApp</span></a><a href="mailto:Marsellino.nasry@gmail.com" class="flex items-center space-x-2 text-slate-300 hover:text-sky-400 transition-colors group"><i class="fas fa-envelope fa-lg"></i><span class="font-medium group-hover:underline">Personal Mail</span></a><a href="mailto:m.nasry@bdo.com.eg" class="flex items-center space-x-2 text-slate-300 hover:text-sky-400 transition-colors group"><i class="fas fa-briefcase fa-lg"></i><span class="font-medium group-hover:underline">BDO Mail</span></a></div>
+                <p class="text-slate-500 text-sm mt-8">&copy; 2026 Marsellino Nasry. All Rights Reserved. This advanced checklist is for professional and informational use.</p>
+            </div>
+        </footer>
+        
+        <!-- Confirmation Modal -->
+        <div id="confirmationModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[100] hidden"><div class="modal-box bg-slate-800 rounded-lg shadow-2xl p-6 w-full max-w-md text-center border border-slate-700 transform scale-95 opacity-0"><h3 class="text-xl font-bold text-white mb-4">Confirm Action</h3><p id="modalText" class="text-slate-300 mb-6">Are you sure?</p><div class="flex justify-center space-x-4"><button id="modalCancel" class="px-6 py-2 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-md transition">Cancel</button><button id="modalConfirm" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md transition">Confirm</button></div></div></div>
+
+        <!-- Client Name Modal -->
+        <div id="clientNameModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[100] hidden">
+            <div class="modal-box bg-slate-800 rounded-lg shadow-2xl p-6 w-full max-w-md border border-slate-700 transform scale-95 opacity-0">
+                <h3 id="clientNameTitle" class="text-xl font-bold text-white mb-4">Generate Report</h3>
+                <p class="text-slate-300 mb-6">Please enter the client's name to include in the report.</p>
+                <div>
+                    <label for="clientNameInput" class="block text-sm font-medium text-slate-400 mb-1">Client Name</label>
+                    <input type="text" id="clientNameInput" class="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-slate-200 focus:ring-2 focus:ring-sky-500" placeholder="e.g., Acme Corporation">
+                </div>
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button id="clientNameCancel" class="px-6 py-2 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-md transition">Cancel</button>
+                    <button id="clientNameGenerate" class="px-6 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-md transition">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SoA Editor Modal -->
+        <div id="soaEditorModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[100] hidden">
+            <div class="modal-box bg-slate-800 rounded-lg shadow-2xl p-6 w-full max-w-6xl border border-slate-700 transform scale-95 opacity-0">
+                <h3 class="text-2xl font-bold text-white mb-2">Statement of Applicability Editor</h3>
+                <p class="text-slate-300 mb-4">Review and edit the applicability and justification for each control before generating the PDF.</p>
+                <div id="soaEditorTableContainer" class="mb-4">
+                    <!-- SoA editor table will be injected here by JavaScript -->
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button id="soaEditorCancel" class="px-6 py-2 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-md transition">Cancel</button>
+                    <button id="soaEditorGenerate" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md transition"><i class="fas fa-download mr-2"></i>Generate & Download PDF</button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast fixed bottom-5 right-5 bg-emerald-500 text-white py-2 px-5 rounded-lg shadow-lg opacity-0 transform translate-y-3"><p id="toastText"></p></div>
+
+        <!-- Bulk Action Bar -->
+        <div id="bulkActionBar" class="fixed bottom-0 left-0 right-0 bg-sky-900/90 backdrop-blur-sm p-4 text-white shadow-lg transform translate-y-full z-[60] flex items-center justify-between">
+            <span id="bulkCount" class="font-semibold">0 items selected</span>
+            <div class="flex items-center space-x-3">
+                <label for="bulkStatus" class="text-sm font-medium">Set status to:</label>
+                <select id="bulkStatus" class="appearance-none bg-slate-700 border border-slate-600 rounded-md py-1.5 px-3 text-sm text-white focus:ring-2 focus:ring-sky-500 transition">
+                    <option value="Not Implemented">Not Implemented</option><option value="In Progress">In Progress</option><option value="Implemented">Implemented</option><option value="N/A">N/A</option>
+                </select>
+                <button id="bulkApply" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-md transition">Apply</button>
+                <button id="bulkCancel" class="text-slate-300 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- DATA: ISO 27001:2022 CONTROLS (FULLY EXPANDED - 93 CONTROLS) ---
+        const controlsData = [
+            // A.5 Organizational controls (37 controls)
+            { id: 'A.5.1', title: 'Policies for information security', theme: 'Organizational', guidance: 'Define, approve, publish, and communicate a set of policies for information security. These policies should be reviewed at planned intervals and updated as required.', objective: 'To ensure a clear, management-approved direction and support for information security in accordance with business requirements and relevant laws and regulations.', implementation: ['Develop a high-level Information Security Policy.', 'Create topic-specific policies (e.g., access control, cryptography).', 'Ensure policies are approved by top management.', 'Communicate policies to all relevant personnel and stakeholders.', 'Schedule regular policy reviews (e.g., annually).'], evidence: ['Documented Information Security Policy and related sub-policies.', 'Records of management approval (e.g., meeting minutes).', 'Communication records (e.g., emails, intranet posts, training logs).', 'Policy review schedule and records of past reviews.'] },
+            { id: 'A.5.2', title: 'Information security roles and responsibilities', theme: 'Organizational', guidance: 'Define and allocate all information security-related roles and responsibilities within the organization to ensure accountability.', objective: 'To establish a clear framework of roles and responsibilities for implementing, maintaining, and improving the ISMS.', implementation: ['Identify all information security-related roles.', 'Document responsibilities for each role in job descriptions or a RACI matrix.', 'Assign individuals to these roles.', 'Ensure that assigned individuals have the necessary competence and authority.'], evidence: ['Documented job descriptions with security responsibilities.', 'A formal RACI (Responsible, Accountable, Consulted, Informed) chart for security processes.', 'Organizational charts showing security roles.', 'Appointment letters for key security roles (e.g., CISO).'] },
+            { id: 'A.5.3', title: 'Segregation of duties', theme: 'Organizational', guidance: 'Implement segregation of duties to reduce the risk of unauthorized or unintentional modification or misuse of assets. Where segregation is not feasible, implement compensating controls.', objective: 'To prevent a single person from being able to execute all critical steps of a process, thereby reducing the risk of fraud, error, and misuse.', implementation: ['Identify conflicting duties and areas of high risk (e.g., requesting and approving access).', 'Design processes and systems to enforce separation of these duties.', 'Implement compensating controls (e.g., activity monitoring, regular audits) where segregation is not possible.', 'Regularly review access rights to ensure segregation is maintained.'], evidence: ['Process documentation showing segregation of duties.', 'System access control configurations demonstrating role separation.', 'Documentation of compensating controls.', 'Audit reports reviewing segregation of duties.'] },
+            { id: 'A.5.4', title: 'Management responsibilities', theme: 'Organizational', guidance: 'Ensure top management demonstrates leadership and commitment to information security by requiring all personnel to apply the information security policy.', objective: 'To ensure active leadership and visible support from management for all information security initiatives.', implementation: ['Management actively promotes the ISMS.', 'Management allocates sufficient resources (financial, human) to information security.', 'Information security objectives are integrated into business objectives.', 'Management chairs or participates in security steering committees.'], evidence: ['Minutes of management review meetings discussing information security.', 'Management communications (e.g., town halls, emails) endorsing security.', 'Budget approvals for security initiatives.', 'ISMS objectives aligned with strategic business goals.'] },
+            { id: 'A.5.5', title: 'Contact with authorities', theme: 'Organizational', guidance: 'Establish and maintain contact with relevant authorities (e.g., law enforcement, regulatory bodies, cyber incident response teams) to facilitate information exchange and cooperation.', objective: 'To ensure timely and effective cooperation with external authorities on information security matters.', implementation: ['Identify relevant authorities (e.g., data protection authorities, national CERTs, police).', 'Establish and document contact points and procedures.', 'Regularly verify and update contact information.', 'Define criteria for when to contact authorities.'], evidence: ['List of relevant authorities with contact details.', 'Documented procedures for contacting authorities.', 'Records of communication with authorities (if any).', 'Membership certificates or correspondence with regulatory bodies.'] },
+            { id: 'A.5.6', title: 'Contact with special interest groups', theme: 'Organizational', guidance: 'Maintain contact with special interest groups, security forums, and professional associations to stay updated on best practices, new threats, and vulnerabilities.', objective: 'To improve knowledge, share information, and stay current with the latest developments in information security.', implementation: ['Identify relevant special interest groups, forums, and associations.', 'Assign personnel to participate in these groups.', 'Establish a process for disseminating learned information within the organization.', 'Utilize information from these groups to improve the ISMS.'], evidence: ['List of memberships in security groups or forums.', 'Records of attendance at conferences or meetings.', 'Internal reports or newsletters summarizing information from external groups.', 'Evidence of ISMS improvements based on information from these groups.'] },
+            { id: 'A.5.7', title: 'Threat intelligence', theme: 'Organizational', guidance: 'Collect and analyze information related to information security threats. Use this threat intelligence to inform risk management and implement preventative measures.', objective: 'To proactively understand the threat landscape and make informed, risk-based decisions on defensive measures, strategies, and priorities.', implementation: ['Identify relevant sources of threat intelligence (e.g., ISACs, government agencies, commercial feeds).', 'Establish a process to collect, process, and analyze threat data.', 'Integrate threat intelligence into risk assessment and incident management processes.', 'Disseminate relevant intelligence to stakeholders.'], evidence: ['Threat intelligence process documentation.', 'Subscription records for intelligence feeds.', 'Threat intelligence reports and analysis summaries.', 'Evidence of threat intelligence influencing risk treatment plans or security control configurations.'] },
+            { id: 'A.5.8', title: 'Information security in project management', theme: 'Organizational', guidance: 'Integrate information security requirements and controls into project management methodologies, regardless of the project type (e.g., waterfall, agile).', objective: 'To ensure that information security is considered and addressed at all stages of a project.', implementation: ['Include a security risk assessment as a mandatory step in the project lifecycle.', 'Define security-related deliverables and checkpoints in project plans.', 'Ensure project managers are trained on security requirements.', 'Allocate security resources to projects.'], evidence: ['Project management methodology documentation that includes security steps.', 'Completed security risk assessments for projects.', 'Project plans showing security tasks and milestones.', 'Meeting minutes where security aspects of projects are discussed.'] },
+            { id: 'A.5.9', title: 'Inventory of information and other associated assets', theme: 'Organizational', guidance: 'Develop and maintain an inventory of all information assets, including hardware, software, services, and data. Assign ownership for each asset.', objective: 'To identify all assets that need to be protected and to assign responsibility for their protection.', implementation: ['Define the scope and granularity of the asset inventory.', 'Use discovery tools and manual processes to identify assets.', 'Record key information for each asset (e.g., owner, location, classification).', 'Establish a process to keep the inventory up-to-date.'], evidence: ['A comprehensive asset inventory (e.g., in a spreadsheet or CMDB).', 'Asset management policy and procedures.', 'Records of asset owner appointments.', 'Audit logs of inventory updates.'] },
+            { id: 'A.5.10', title: 'Acceptable use of information and other associated assets', theme: 'Organizational', guidance: 'Define and document rules for the acceptable use of information and associated assets. Communicate these rules to all relevant personnel.', objective: 'To ensure that all personnel are aware of their responsibilities when using organizational assets, reducing the risk of misuse.', implementation: ['Develop an Acceptable Use Policy (AUP).', 'The AUP should cover topics like internet usage, email, mobile devices, and software.', 'Communicate the AUP to all users.', 'Obtain user acknowledgement of the AUP.'], evidence: ['A documented Acceptable Use Policy (AUP).', 'Signed AUP acknowledgement forms from employees.', 'Training materials covering the AUP.', 'Records of communication of the AUP.'] },
+            { id: 'A.5.11', title: 'Return of assets', theme: 'Organizational', guidance: 'Establish a formal process to ensure all organizational assets in the possession of employees, contractors, or other parties are returned upon termination of employment, contract, or agreement.', objective: 'To prevent unauthorized access to information and protect organizational assets after personnel leave.', implementation: ['Create a formal offboarding or de-provisioning process.', 'Integrate asset return into the HR and IT termination checklist.', 'Maintain records of all assets issued to individuals.', 'Track the return of all assets (e.g., laptops, phones, access cards).'], evidence: ['Employee offboarding procedure.', 'A signed checklist confirming return of all assets upon termination.', 'Asset inventory records showing asset return status.', 'Reports from HR/IT on completed offboarding.'] },
+            { id: 'A.5.12', title: 'Classification of information', theme: 'Organizational', guidance: 'Classify information based on its criticality, sensitivity, and legal requirements. Implement handling procedures appropriate for each classification level.', objective: 'To ensure that information receives an appropriate level of protection based on its importance to the organization.', implementation: ['Define a classification scheme (e.g., Public, Internal, Confidential, Restricted).', 'Establish criteria for classifying information.', 'Assign responsibility for classifying information (usually to the information owner).', 'Train personnel on the classification scheme.'], evidence: ['Information classification policy and procedure.', 'Definition of classification levels.', 'Examples of classified documents.', 'Training records on information classification.'] },
+            { id: 'A.5.13', title: 'Labelling of information', theme: 'Organizational', guidance: 'Develop and implement procedures for labelling information (both physical and digital) according to the established classification scheme.', objective: 'To clearly indicate the classification of information, ensuring it is handled correctly by recipients.', implementation: ['Define procedures for how to apply labels to different types of media (e.g., email footers, document headers/footers, physical stamps).', 'Implement automated labelling tools where possible (e.g., in Microsoft 365).', 'Ensure users are aware of their responsibility to label information correctly.'], evidence: ['Information labelling procedure.', 'Screenshots of digital labels (e.g., email sensitivity labels).', 'Photographs of physical labels on documents or media.', 'Configuration of automated labelling tools.'] },
+            { id: 'A.5.14', title: 'Information transfer', theme: 'Organizational', guidance: 'Establish rules, procedures, or agreements for the secure transfer of information, both within the organization and with external parties.', objective: 'To protect information from unauthorized access, modification, or destruction during transfer.', implementation: ['Develop an information transfer policy.', 'Define approved methods for transferring information based on its classification (e.g., encrypted email, secure file transfer protocol).', 'Implement technical controls to enforce these rules.', 'Use formal agreements (e.g., NDAs, DTAs) for transfers with external parties.'], evidence: ['Information transfer policy and procedure.', 'List of approved information transfer methods and tools.', 'Non-Disclosure Agreements (NDAs) or Data Transfer Agreements (DTAs).', 'Logs from secure transfer systems.'] },
+            { id: 'A.5.15', title: 'Access control', theme: 'Organizational', guidance: 'Define and implement a formal access control policy that specifies who can access what information and under what conditions, based on the principle of least privilege.', objective: 'To ensure authorized access and to prevent unauthorized access to information and information processing facilities.', implementation: ['Develop a formal access control policy.', 'Base access rights on business requirements ("need-to-know") and the principle of least privilege.', 'Document the rules for granting, reviewing, and revoking access.', 'The policy should cover logical and physical access.'], evidence: ['Documented access control policy.', 'Role-based access control (RBAC) matrix.', 'Procedures for user access request, approval, and review.', 'The policy is communicated to all relevant parties.'] },
+            { id: 'A.5.16', title: 'Identity management', theme: 'Organizational', guidance: 'Manage the full lifecycle of identities (both human and non-human) from creation to deletion to ensure they are unique, authenticated, and authorized.', objective: 'To ensure that all access to systems and information is attributable to a unique and managed identity.', implementation: ['Implement a unique identifier system for all users and systems.', 'Establish a formal process for registering and de-registering users (joiner/mover/leaver).', 'Ensure that identities are linked to an authoritative source (e.g., HR system).', 'Manage the lifecycle of non-human identities (e.g., service accounts).'], evidence: ['Identity and access management (IAM) procedures.', 'Joiner/Mover/Leaver (JML) process documentation.', 'Records of user registration and de-registration.', 'Inventory of service accounts and their owners.'] },
+            { id: 'A.5.17', title: 'Authentication information', theme: 'Organizational', guidance: 'Manage and protect authentication information (e.g., passwords, keys, tokens) throughout its lifecycle. Users must be responsible for protecting their authenticators.', objective: 'To prevent the compromise of authentication credentials and ensure the identity of users can be verified.', implementation: ['Establish a password policy defining complexity, length, and history requirements.', 'Implement secure processes for issuing, changing, and revoking authenticators.', 'Prohibit the sharing of authentication information.', 'Enforce the use of strong authentication mechanisms (e.g., MFA).'], evidence: ['Password policy document.', 'System configuration settings for password parameters.', 'Procedure for managing MFA tokens.', 'User awareness materials on protecting passwords.'] },
+            { id: 'A.5.18', title: 'Access rights', theme: 'Organizational', guidance: 'Establish a formal process for granting, reviewing, modifying, and revoking access rights to information and other associated assets.', objective: 'To ensure that users only have the access rights they need to perform their jobs, and that these rights are removed when no longer needed.', implementation: ['Implement a formal user access request and approval process.', 'Conduct regular reviews of user access rights (e.g., quarterly or annually).', 'Ensure access rights are revoked promptly upon termination or role change.', 'Log all access rights modifications.'], evidence: ['User access management procedure.', 'Completed access request forms with approvals.', 'Records of periodic access reviews.', 'Logs showing timely revocation of access for leavers.'] },
+            { id: 'A.5.19', title: 'Information security in supplier relationships', theme: 'Organizational', guidance: 'Define and manage information security requirements for supplier relationships to protect the organization’s assets that are accessible by or shared with suppliers.', objective: 'To manage the information security risks introduced by suppliers and ensure the protection of organizational assets.', implementation: ['Develop a policy for managing supplier security.', 'Perform a security risk assessment for all new suppliers.', 'Define security requirements based on the type of access or data shared.', 'Monitor supplier compliance with these requirements.'], evidence: ['Supplier security policy.', 'Supplier risk assessment methodology and completed assessments.', 'A register of suppliers with their risk ratings.', 'Security clauses within supplier contracts.'] },
+            { id: 'A.5.20', title: 'Addressing information security within supplier agreements', theme: 'Organizational', guidance: 'Ensure that supplier agreements include relevant information security requirements, covering aspects like confidentiality, incident response, and compliance.', objective: 'To create a legally binding commitment from suppliers to adhere to the organization\'s security requirements.', implementation: ['Develop a standard set of security clauses or a security addendum for supplier contracts.', 'Ensure these clauses are included in all relevant supplier agreements before granting access.', 'Topics should include incident notification, right to audit, data protection, and secure disposal.', 'Legal team should review the security clauses.'], evidence: ['Standard security addendum for supplier contracts.', 'Signed contracts containing the security clauses.', 'Records of legal review.', 'A process for ensuring security requirements are in contracts.'] },
+            { id: 'A.5.21', title: 'Managing information security in the ICT supply chain', theme: 'Organizational', guidance: 'Manage the security risks associated with the information and communication technology (ICT) products and services supply chain.', objective: 'To protect the integrity and security of ICT products and services from threats throughout their lifecycle.', implementation: ['Identify critical ICT suppliers and products.', 'Assess security risks in the supply chain (e.g., malware, counterfeits).', 'Define security requirements for suppliers regarding their development and delivery processes.', 'Verify the integrity of products and services upon receipt.'], evidence: ['ICT supply chain risk management policy.', 'Security requirements document for ICT suppliers.', 'Records of supplier audits or assessments.', 'Evidence of product integrity checks (e.g., hash verification).'] },
+            { id: 'A.5.22', title: 'Monitoring, review and change management of supplier services', theme: 'Organizational', guidance: 'Regularly monitor, review, audit, and manage changes in supplier services to ensure they continue to meet information security requirements.', objective: 'To ensure that the security performance of suppliers remains effective and aligned with agreements over time.', implementation: ['Establish a schedule for supplier security reviews.', 'Monitor supplier performance against SLAs.', 'Conduct audits of suppliers (or review their third-party audit reports, e.g., SOC 2).', 'Implement a process for managing changes to supplier services.'], evidence: ['Supplier review meeting minutes and reports.', 'Supplier performance dashboards.', 'Third-party audit reports (SOC 2, ISO 27001 certificate) from suppliers.', 'Change management records for supplier services.'] },
+            { id: 'A.5.23', title: 'Information security for use of cloud services', theme: 'Organizational', guidance: 'Establish processes for the acquisition, use, management, and exit from cloud services, ensuring information security requirements are defined and met.', objective: 'To manage the security risks associated with using cloud services and to ensure clear responsibilities between the organization and the cloud provider.', implementation: ['Develop a cloud security policy.', 'Define a process for approving the use of cloud services.', 'Use a shared responsibility model to clarify roles.', 'Establish an exit strategy for each cloud service.'], evidence: ['Cloud security policy or cloud adoption framework.', 'Cloud service approval process and records.', 'Documented shared responsibility model for each major cloud provider used.', 'Cloud service exit plans.'] },
+            { id: 'A.5.24', title: 'Information security incident management planning and preparation', theme: 'Organizational', guidance: 'Plan and prepare for managing information security incidents by defining roles, responsibilities, and procedures for response and recovery.', objective: 'To ensure a rapid, effective, and orderly response to information security incidents.', implementation: ['Develop an incident management plan.', 'Define roles and responsibilities (e.g., form a CSIRT).', 'Establish procedures for detection, analysis, containment, eradication, and recovery.', 'Provide training and conduct regular drills.'], evidence: ['Information security incident management plan.', 'Contact list for the Computer Security Incident Response Team (CSIRT).', 'Incident response playbooks for common incident types.', 'Training records and post-mortem reports from drills.'] },
+            { id: 'A.5.25', title: 'Assessment and decision on information security events', theme: 'Organizational', guidance: 'Establish procedures to assess information security events and decide if they constitute information security incidents. This should be done by authorized personnel.', objective: 'To ensure that security events are evaluated consistently and escalated appropriately.', implementation: ['Define criteria for what constitutes a security event vs. an incident.', 'Establish a process for reporting and logging all security events.', 'Train personnel to assess events against the defined criteria.', 'Formalize the process for declaring an incident.'], evidence: ['Incident classification procedure.', 'Logs from SIEM or other monitoring tools showing security events.', 'Records of event assessments (e.g., tickets in a helpdesk system).', 'Forms or templates for declaring an incident.'] },
+            { id: 'A.5.26', title: 'Response to information security incidents', theme: 'Organizational', guidance: 'Respond to information security incidents in accordance with documented procedures to contain, eradicate, and recover from the incident.', objective: 'To limit the damage of a security incident and restore services in a timely manner.', implementation: ['Follow the documented incident response procedures.', 'Collect and preserve evidence during the response.', 'Communicate with relevant stakeholders during the incident.', 'Ensure that response actions are authorized and documented.'], evidence: ['Completed incident response reports for past incidents.', 'Tickets or logs detailing actions taken during an incident.', 'Communication records related to an incident.', 'Forensic reports or analysis of evidence.'] },
+            { id: 'A.5.27', title: 'Learning from information security incidents', theme: 'Organizational', guidance: 'Analyze information security incidents and their management to identify root causes and implement improvements to prevent recurrence.', objective: 'To continually improve the incident response capability and overall security posture by learning from past mistakes.', implementation: ['Conduct a post-incident review (post-mortem) for all significant incidents.', 'Identify the root cause of the incident.', 'Develop and track corrective actions to address the root cause.', 'Share lessons learned with relevant teams.'], evidence: ['Post-incident review reports.', 'Root cause analysis (RCA) documentation.', 'A corrective action plan tracker.', 'Updates to policies or procedures based on lessons learned.'] },
+            { id: 'A.5.28', title: 'Collection of evidence', theme: 'Organizational', guidance: 'Establish and apply procedures for the identification, collection, acquisition, and preservation of evidence related to information security incidents.', objective: 'To ensure that evidence is collected in a forensically sound manner, maintaining its integrity for internal analysis or legal proceedings.', implementation: ['Develop a forensic readiness plan and evidence collection procedures.', 'Train incident responders on proper evidence handling techniques (e.g., chain of custody).', 'Use validated tools for evidence acquisition.', 'Ensure evidence is stored securely.'], evidence: ['Evidence collection and handling procedure.', 'Chain of custody forms.', 'Training records for forensic procedures.', 'Logs from forensic tools.'] },
+            { id: 'A.5.29', title: 'Information security during disruption', theme: 'Organizational', guidance: 'Plan how to maintain information security at an appropriate level during business disruptions or disasters.', objective: 'To ensure that security controls are not compromised during a crisis, and are effectively managed throughout a business continuity event.', implementation: ['Integrate information security requirements into the business continuity plan (BCP).', 'Identify essential security controls that must be maintained during a disruption.', 'Define security procedures for operating at an alternate site.', 'Assign security responsibilities within the BCP structure.'], evidence: ['Business Continuity Plan (BCP) with specific security sections.', 'Risk assessment for security during disruption.', 'Procedures for managing security at alternate sites.', 'Results of BCP tests that include security scenarios.'] },
+            { id: 'A.5.30', title: 'ICT readiness for business continuity', theme: 'Organizational', guidance: 'Ensure ICT services are designed with sufficient resilience and can be recovered in a timely manner to support business continuity objectives.', objective: 'To ensure that the technology infrastructure can support the business continuity needs of the organization.', implementation: ['Conduct a Business Impact Analysis (BIA) to define RTOs and RPOs.', 'Implement redundant and resilient ICT architectures.', 'Develop and maintain a Disaster Recovery (DR) plan for critical systems.', 'Regularly test the DR plan.'], evidence: ['Business Impact Analysis (BIA) report.', 'Disaster Recovery (DR) plan.', 'System architecture diagrams showing redundancy.', 'DR test plans and test reports.'] },
+            { id: 'A.5.31', title: 'Identification of legal, statutory, regulatory and contractual requirements', theme: 'Organizational', guidance: 'Identify, document, and keep up to date all relevant legal, statutory, regulatory, and contractual requirements related to information security.', objective: 'To ensure that the organization is aware of and complies with all applicable information security-related obligations.', implementation: ['Create and maintain a register of legal and contractual requirements.', 'Assign responsibility for monitoring changes to these requirements.', 'Communicate requirements to relevant stakeholders.', 'Integrate these requirements into the ISMS policies and procedures.'], evidence: ['Register of legal, regulatory, and contractual requirements.', 'Procedures for identifying and updating the register.', 'Correspondence with legal counsel or regulatory bodies.', 'Policies that explicitly reference legal requirements (e.g., a data protection policy referencing GDPR).'] },
+            { id: 'A.5.32', title: 'Intellectual property rights', theme: 'Organizational', guidance: 'Implement procedures to protect intellectual property rights (e.g., copyrights, trademarks, patents) and to avoid infringement of others’ rights.', objective: 'To protect the organization’s intellectual property and ensure compliance with IP laws and agreements.', implementation: ['Develop a policy on intellectual property.', 'Implement controls to protect proprietary source code and data.', 'Use legitimate, licensed software and maintain records of licenses.', 'Train employees on respecting IP rights.'], evidence: ['Intellectual property policy.', 'Software license inventory and records.', 'Controls on access to source code repositories.', 'Training materials on IP.'] },
+            { id: 'A.5.33', title: 'Protection of records', theme: 'Organizational', guidance: 'Protect records from loss, destruction, falsification, unauthorized access, and unauthorized release, in accordance with legal, regulatory, and business requirements.', objective: 'To ensure the integrity, availability, and confidentiality of important organizational records.', implementation: ['Develop a records management policy.', 'Define retention periods for different types of records.', 'Implement controls for secure storage and disposal of records (physical and digital).', 'Use access controls and audit logs to protect records.'], evidence: ['Records management policy and retention schedule.', 'Procedures for secure storage of records.', 'Access control logs for records repositories.', 'Certificates of destruction for disposed records.'] },
+            { id: 'A.5.34', title: 'Privacy and protection of personally identifiable information (PII)', theme: 'Organizational', guidance: 'Identify and meet requirements regarding the preservation of privacy and protection of PII, according to applicable laws and regulations.', objective: 'To ensure compliance with privacy laws and protect the rights of individuals whose data is processed.', implementation: ['Develop a data protection or privacy policy.', 'Conduct Data Protection Impact Assessments (DPIAs) for new processing activities.', 'Implement technical and organizational measures to protect PII.', 'Appoint a Data Protection Officer (DPO) if required.'], evidence: ['Data protection policy.', 'Register of processing activities (ROPA).', 'Completed DPIA reports.', 'Privacy notices provided to data subjects.'] },
+            { id: 'A.5.35', title: 'Independent review of information security', theme: 'Organizational', guidance: 'Ensure that the organization’s approach to managing information security and its implementation are reviewed independently at planned intervals or when significant changes occur.', objective: 'To obtain an objective and unbiased assessment of the effectiveness of the information security implementation.', implementation: ['Schedule regular independent reviews (e.g., internal audits, external audits, penetration tests).', 'Ensure reviewers are independent of the area being reviewed.', 'Define the scope and criteria for the reviews.', 'Report review findings to management.'], evidence: ['Internal audit plan and schedule.', 'Internal and external audit reports.', 'Penetration testing reports.', 'Management responses to audit findings.'] },
+            { id: 'A.5.36', title: 'Compliance with policies, rules and standards for information security', theme: 'Organizational', guidance: 'Regularly review compliance of information processing and procedures with the organization’s information security policies, rules, and standards.', objective: 'To ensure that security controls are operating as intended and that policies are being followed.', implementation: ['Establish a process for management to review the compliance of their areas.', 'Implement automated tools to check for compliance with technical standards.', 'Conduct regular self-assessments or internal reviews.', 'Document and address any non-compliance.'], evidence: ['Compliance review reports from department managers.', 'Reports from configuration compliance scanning tools.', 'Checklists used for self-assessments.', 'Records of non-compliance and corrective actions.'] },
+            { id: 'A.5.37', title: 'Documented operating procedures', theme: 'Organizational', guidance: 'Ensure that operating procedures for information processing facilities are documented and made available to all users who need them.', objective: 'To ensure the consistent and correct operation of information processing facilities.', implementation: ['Identify all critical operational tasks that require documented procedures.', 'Write clear and concise operating procedures.', 'Store procedures in a central, accessible location.', 'Review and update procedures regularly.'], evidence: ['A library of documented operating procedures (e.g., for backup, system startup, user support).', 'Evidence that procedures are accessible to relevant staff.', 'Version control history for procedures.', 'Training records showing staff have been trained on the procedures.'] },
+
+            // A.6 People controls (8 controls)
+            { id: 'A.6.1', title: 'Screening', theme: 'People', guidance: 'Conduct background verification checks on all candidates for employment, contractors, and third parties in accordance with relevant laws, regulations, and ethics.', objective: 'To verify that individuals being granted access to assets are trustworthy and have the claimed credentials.', implementation: ['Define screening requirements based on the classification of information to be accessed.', 'Obtain candidate consent before conducting checks.', 'Checks can include identity, criminal record, qualifications, and references.', 'Document the screening process.'], evidence: ['Screening policy and procedure.', 'Consent forms signed by candidates.', 'Completed background check reports from a third-party provider.', 'Verification of candidate qualifications.'] },
+            { id: 'A.6.2', title: 'Terms and conditions of employment', theme: 'People', guidance: 'Ensure that employment agreements or contracts include employee responsibilities for information security.', objective: 'To make employees and contractors formally aware of and committed to their information security responsibilities.', implementation: ['Include a confidentiality clause in all employment contracts.', 'Reference the Information Security Policy and AUP in the contract.', 'Define responsibilities for protecting company assets.', 'Ensure legal review of the contract clauses.'], evidence: ['Standard employment contract template with security clauses.', 'Signed contracts from employees.', 'Confidentiality agreements or NDAs.', 'Legal review records of the clauses.'] },
+            { id: 'A.6.3', title: 'Information security awareness, education and training', theme: 'People', guidance: 'Provide all employees and, where relevant, contractors with appropriate awareness, education, and training on information security and their responsibilities.', objective: 'To ensure that all personnel understand their role in protecting the organization\'s information.', implementation: ['Develop an annual security awareness plan.', 'Provide mandatory induction training for new hires.', 'Conduct regular awareness campaigns (e.g., phishing simulations, newsletters).', 'Provide role-specific training for high-risk roles (e.g., developers, sysadmins).'], evidence: ['Security awareness and training plan.', 'Training materials and presentations.', 'Attendance records and completion certificates from training.', 'Results of phishing simulation campaigns.'] },
+            { id: 'A.6.4', title: 'Disciplinary process', theme: 'People', guidance: 'Establish a formal disciplinary process for employees who have committed an information security breach, and communicate this process to all employees.', objective: 'To ensure that violations of information security policy are handled consistently and appropriately.', implementation: ['Integrate security violations into the overall HR disciplinary process.', 'Define different levels of disciplinary action for different types of violations.', 'Ensure the process is communicated to all employees.', 'Apply the process fairly and consistently.'], evidence: ['Documented disciplinary process that includes security violations.', 'HR policy documents.', 'Evidence of communication of the process (e.g., in employee handbook).', 'Anonymized records of disciplinary actions taken for security breaches (if any).'] },
+            { id: 'A.6.5', title: 'Responsibilities after termination or change of employment', theme: 'People', guidance: 'Define and communicate information security responsibilities and duties that remain valid after termination or change of employment.', objective: 'To ensure that confidentiality and other security obligations continue to be met even after an individual leaves the organization.', implementation: ['Include clauses in employment contracts that specify post-employment responsibilities (e.g., ongoing confidentiality).', 'Remind exiting employees of their obligations during the offboarding process.', 'Ensure non-disclosure agreements have appropriate survival clauses.'], evidence: ['Contract clauses specifying post-employment responsibilities.', 'Offboarding checklist that includes reminding employees of obligations.', 'Signed NDAs with survival clauses.', 'Exit interview records.'] },
+            { id: 'A.6.6', title: 'Confidentiality or non-disclosure agreements', theme: 'People', guidance: 'Use confidentiality or non-disclosure agreements (NDAs) to protect confidential information, covering employees, contractors, and other relevant parties.', objective: 'To provide legal protection for the organization\'s confidential information when shared with internal or external parties.', implementation: ['Develop standard NDA templates.', 'Identify situations where an NDA is required.', 'Ensure NDAs are signed before any confidential information is disclosed.', 'Maintain a repository of signed NDAs.'], evidence: ['Standard NDA templates.', 'A register of signed NDAs.', 'Policy defining when an NDA is required.', 'Signed NDAs from employees, contractors, and third parties.'] },
+            { id: 'A.6.7', title: 'Remote working', theme: 'People', guidance: 'Implement a policy and supporting security measures to protect information accessed, processed, or stored at remote working sites.', objective: 'To manage the risks associated with working outside the organization\'s physical premises.', implementation: ['Develop a remote working policy.', 'Provide secure remote access solutions (e.g., VPN).', 'Implement security controls on employee-owned devices if used (BYOD).', 'Provide guidance on securing the home working environment.'], evidence: ['Remote working policy.', 'Configuration of VPN and other remote access systems.', 'BYOD policy and user agreements.', 'Security awareness materials for remote workers.'] },
+            { id: 'A.6.8', title: 'Information security event reporting', theme: 'People', guidance: 'Require all employees and contractors to report any observed or suspected information security events or weaknesses promptly through appropriate channels.', objective: 'To ensure that potential security incidents are identified and reported quickly, enabling a timely response.', implementation: ['Establish a clear, simple, and well-publicized channel for reporting security events (e.g., a dedicated email address or helpdesk number).', 'Create a "no-blame" culture to encourage reporting.', 'Train all users on what to report and how to report it.', 'Integrate this reporting channel into the incident management process.'], evidence: ['Information security event reporting procedure.', 'Posters, emails, or intranet pages publicizing the reporting channel.', 'Training materials on event reporting.', 'Logs or tickets of user-reported events.'] },
+
+            // A.7 Physical controls (14 controls)
+            { id: 'A.7.1', title: 'Physical security perimeters', theme: 'Physical', guidance: 'Define and use physical security perimeters to protect areas that contain sensitive or critical information and information processing facilities.', objective: 'To prevent unauthorized physical access, damage, and interference to the organization\'s premises and information.', implementation: ['Identify secure areas (e.g., data centers, server rooms).', 'Use physical barriers like walls, fences, and locked doors to create perimeters.', 'The strength of the perimeter should be commensurate with the risks.', 'Clearly define and signpost the perimeter.'], evidence: ['Site plans showing physical security perimeters.', 'Photographs of walls, fences, doors, and reception areas.', 'Risk assessment of physical threats.', 'Signage indicating restricted areas.'] },
+            { id: 'A.7.2', title: 'Physical entry', theme: 'Physical', guidance: 'Secure areas shall be protected by appropriate entry controls to ensure that only authorized personnel are allowed access.', objective: 'To ensure that only authorized individuals can gain entry to secure areas.', implementation: ['Implement access control systems (e.g., key cards, biometric readers) at the entrances to secure areas.', 'Maintain a record of who is authorized to enter each area.', 'Establish procedures for managing visitors and escorts.', 'Log and monitor all entry and exit events.'], evidence: ['Access control system configuration showing authorized personnel.', 'Visitor management procedure and visitor log.', 'Access logs from the card reader system.', 'Photographs of access control readers at doorways.'] },
+            { id: 'A.7.3', title: 'Securing offices, rooms and facilities', theme: 'Physical', guidance: 'Design and apply physical security measures for offices, rooms, and facilities to prevent unauthorized physical access and damage.', objective: 'To provide layered physical protection for sensitive assets within the perimeter.', implementation: ['Install high-quality locks on doors to server rooms and other sensitive areas.', 'Secure windows and other potential points of entry.', 'Ensure facilities are not in locations prone to natural disasters if possible.', 'Consider the security of the building itself.'], evidence: ['Physical security design documents.', 'Specifications for locks and doors.', 'Maintenance records for physical security equipment.', 'Risk assessment of the building location.'] },
+            { id: 'A.7.4', title: 'Physical security monitoring', theme: 'Physical', guidance: 'Premises shall be continuously monitored for unauthorized physical access using surveillance systems like alarms and CCTV.', objective: 'To detect and deter unauthorized physical access.', implementation: ['Install intrusion detection systems (alarms) on perimeters and secure areas.', 'Use CCTV cameras to monitor sensitive locations, in compliance with privacy laws.', 'Ensure monitoring systems are linked to a response function (e.g., security guards).', 'Regularly test monitoring systems.'], evidence: ['CCTV camera placement plan.', 'Intrusion detection system configuration and specifications.', 'Logs from CCTV and alarm systems.', 'Records of monitoring system tests.'] },
+            { id: 'A.7.5', title: 'Protecting against physical and environmental threats', theme: 'Physical', guidance: 'Design and implement physical protection against natural disasters, malicious attacks, or accidents like fire, flood, and explosion.', objective: 'To prevent loss, damage, or compromise of assets and interruption to business activities from physical and environmental threats.', implementation: ['Install fire detection and suppression systems.', 'Implement environmental controls for temperature and humidity in data centers.', 'Use water detection sensors.', 'Protect facilities from power surges and outages (e.g., using UPS and generators).'], evidence: ['Fire suppression system specifications and maintenance records.', 'Environmental monitoring logs from data centers.', 'UPS and generator test records.', 'Building plans showing protection measures.'] },
+            { id: 'A.7.6', title: 'Working in secure areas', theme: 'Physical', guidance: 'Establish and apply procedures for working in secure areas to minimize risks of unauthorized access or information compromise.', objective: 'To reduce the security risks associated with performing work inside a designated secure area.', implementation: ['Prohibit unsupervised work in secure areas if necessary.', 'Restrict the use of personal electronic devices (e.g., cameras, phones) inside secure areas.', 'Implement procedures to prevent tailgating.', 'Log all activities performed in the secure area.'], evidence: ['Procedure for working in secure areas.', 'Signage at the entrance of secure areas detailing the rules.', 'Awareness materials on preventing tailgating.', 'Access logs and activity logs for secure areas.'] },
+            { id: 'A.7.7', title: 'Clear desk and clear screen', theme: 'Physical', guidance: 'Implement a clear desk policy for papers and removable storage media and a clear screen policy for information processing facilities to reduce risks of unauthorized access.', objective: 'To reduce the risk of unauthorized access, loss of, and damage to information during and outside of normal working hours.', implementation: ['Develop a clear desk and clear screen policy.', 'Require employees to lock their computers when leaving their desks.', 'Provide lockable storage for sensitive documents.', 'Conduct regular walk-throughs to check for compliance.'], evidence: ['Clear desk and clear screen policy.', 'Screensaver and workstation lock configuration via GPO.', 'Photographs of lockable cabinets.', 'Records of compliance checks or walk-throughs.'] },
+            { id: 'A.7.8', title: 'Equipment siting and protection', theme: 'Physical', guidance: 'Position and protect equipment to reduce risks from environmental threats and hazards, and opportunities for unauthorized access.', objective: 'To prevent asset loss, damage, or theft, and to avoid business interruption.', implementation: ['Place critical equipment in secure areas away from public access.', 'Position screens to prevent overlooking by unauthorized individuals.', 'Protect equipment from environmental hazards like water drips or high traffic.', 'Ensure adequate ventilation and power supply.'], evidence: ['Data center layout diagram.', 'Risk assessment for equipment location.', 'Photographs showing equipment placement.', 'Use of privacy screens on monitors in public-facing areas.'] },
+            { id: 'A.7.9', title: 'Security of assets off-premises', theme: 'Physical', guidance: 'Implement security measures for assets when they are taken off-site to protect them from unauthorized access, misuse, or theft.', objective: 'To maintain the security of assets when used outside the organization\'s premises.', implementation: ['The remote working policy should cover the security of assets.', 'Require the use of laptop locks and secure carrying cases.', 'Enforce full-disk encryption on all mobile devices.', 'Establish a procedure for reporting lost or stolen assets.'], evidence: ['Policy section on securing assets off-premises.', 'Asset register tracking laptops assigned to remote workers.', 'Encryption status reports for laptops.', 'Procedure for reporting lost or stolen devices.'] },
+            { id: 'A.7.10', title: 'Storage media', theme: 'Physical', guidance: 'Manage removable and non-removable storage media throughout their lifecycle (procurement, use, transport, disposal) to prevent unauthorized disclosure of information.', objective: 'To prevent loss, theft, or compromise of information stored on any type of media.', implementation: ['Develop a policy for the management of storage media.', 'Restrict or prohibit the use of unauthorized removable media.', 'Use encryption for all sensitive data on removable media.', 'Implement a process for the secure disposal or destruction of media.', 'Log the movement of media containing sensitive data.'], evidence: ['Media handling and disposal policy.', 'Technical controls blocking USB ports.', 'Records of media destruction (e.g., certificates of destruction).', 'Logs for tracking backup tapes sent off-site.'] },
+            { id: 'A.7.11', title: 'Supporting utilities', theme: 'Physical', guidance: 'Protect information processing facilities from power failures and other disruptions caused by failures in supporting utilities (e.g., electricity, water, HVAC).', objective: 'To ensure the availability of the utilities that are essential for the operation of information processing facilities.', implementation: ['Install Uninterruptible Power Supplies (UPS) for critical systems.', 'Use backup generators for extended power outages.', 'Implement redundant HVAC systems in data centers.', 'Regularly test all supporting utilities.'], evidence: ['Specifications for UPS and generator systems.', 'Maintenance and test records for utilities.', 'Diagrams of utility connections.', 'Environmental monitoring logs.'] },
+            { id: 'A.7.12', title: 'Cabling security', theme: 'Physical', guidance: 'Protect power and telecommunications cabling carrying data or supporting information services from interception, interference, or damage.', objective: 'To prevent unauthorized interception of data or disruption of services caused by damage to cabling.', implementation: ['Run network cables in protective conduits or secure cable trays.', 'Separate power cables from data cables to prevent interference.', 'Secure patch panels and wiring closets.', 'Protect against unauthorized cable taps.'], evidence: ['Diagrams of the network cabling layout.', 'Photographs of secured wiring closets and cable trays.', 'Access logs for telecommunications rooms.', 'Policy on cabling security.'] },
+            { id: 'A.7.13', title: 'Equipment maintenance', theme: 'Physical', guidance: 'Perform regular maintenance of equipment to ensure its continued availability and integrity. This should be done by authorized personnel.', objective: 'To ensure that equipment continues to operate correctly and securely.', implementation: ['Establish a planned maintenance schedule for all critical equipment.', 'Use only authorized personnel or third-party vendors for maintenance.', 'Supervise maintenance performed by third parties.', 'Sanitize any equipment containing sensitive data before it is sent for off-site repair.'], evidence: ['Equipment maintenance schedule and logs.', 'Contracts with third-party maintenance providers.', 'Procedures for supervising external personnel.', 'Records of equipment sanitization.'] },
+            { id: 'A.7.14', title: 'Secure disposal or re-use of equipment', theme: 'Physical', guidance: 'Verify that all sensitive data and licensed software have been securely erased or overwritten from equipment prior to its disposal or re-use.', objective: 'To prevent the leakage of sensitive information from equipment that is being decommissioned.', implementation: ['Develop a secure disposal policy and procedure.', 'Use approved data destruction techniques (e.g., cryptographic erase, overwriting, physical destruction).', 'Maintain records of all equipment disposals.', 'Use a certified third party for data destruction where necessary.'], evidence: ['Secure disposal policy.', 'Inventory of equipment pending or undergoing disposal.', 'Certificates of data destruction.', 'Records confirming data has been wiped from re-purposed equipment.'] },
+
+            // A.8 Technological controls (34 controls)
+            { id: 'A.8.1', title: 'User end point devices', theme: 'Technological', guidance: 'Implement security measures to protect information on user endpoint devices (e.g., laptops, smartphones) such as encryption, anti-malware, and device lock.', objective: 'To protect corporate data from compromise on user-controlled devices, whether corporate-owned or personal (BYOD).', implementation: ['Define a policy for endpoint device security.', 'Deploy and manage endpoint protection solutions (antivirus/antimalware).', 'Enforce full-disk encryption (e.g., BitLocker, FileVault).', 'Use Mobile Device Management (MDM) for mobile devices.', 'Implement controls for device lock, password complexity, and data wiping.'], evidence: ['Endpoint security policy.', 'Configuration records of EDR/MDM solutions.', 'Reports from security tools showing compliance (e.g., encryption status).', 'Asset inventory of endpoint devices.'] },
+            { id: 'A.8.2', title: 'Privileged access rights', theme: 'Technological', guidance: 'Strictly control and limit the allocation and use of privileged access rights, which allow users to override system controls.', objective: 'To reduce the risk of unauthorized and potentially catastrophic actions on critical systems.', implementation: ['Limit the number of privileged accounts to the absolute minimum.', 'Use a Privileged Access Management (PAM) solution.', 'Implement Just-In-Time (JIT) access for privileged operations.', 'Log and monitor all privileged activities.'], evidence: ['Privileged access management policy.', 'A list of all users with privileged access and the justification.', 'Configuration and logs from a PAM solution.', 'Audit reports of privileged access activity.'] },
+            { id: 'A.8.3', title: 'Information access restriction', theme: 'Technological', guidance: 'Restrict access to information and application system functions based on the principle of least privilege and the access control policy.', objective: 'To ensure that users can only access the information and functions that are strictly necessary for their role.', implementation: ['Implement Role-Based Access Control (RBAC).', 'Configure applications and file systems with restrictive permissions.', 'Ensure that default access is "deny all".', 'Regularly review and remove unnecessary access rights.'], evidence: ['Role-Based Access Control (RBAC) matrix.', 'Screenshots of file system permissions or application role configurations.', 'Procedure for access rights review.', 'Records of access reviews and modifications.'] },
+            { id: 'A.8.4', title: 'Access to source code', theme: 'Technological', guidance: 'Implement strict controls on access to software source code, system files, and development tools to prevent unauthorized access or modification.', objective: 'To protect the integrity and intellectual property of the organization\'s software.', implementation: ['Store source code in a secure version control system (e.g., Git) with strict access controls.', 'Limit access to source code on a need-to-know basis.', 'Log all access and changes to the source code repository.', 'Prohibit storing credentials or secrets in source code.'], evidence: ['Access control configuration of the source code repository.', 'Audit logs from the version control system.', 'Source code scanning reports showing no embedded secrets.', 'Policy on secure source code management.'] },
+            { id: 'A.8.5', title: 'Secure authentication', theme: 'Technological', guidance: 'Implement secure authentication mechanisms to verify the identity of users, processes, or devices. Multi-factor authentication (MFA) should be used for high-risk systems.', objective: 'To ensure that entities are who they claim to be before granting them access.', implementation: ['Enforce strong password policies.', 'Implement Multi-Factor Authentication (MFA) for all external access, privileged access, and access to critical systems.', 'Avoid using default or weak passwords.', 'Protect authentication credentials in transit and at rest.'], evidence: ['Password policy configuration in systems (e.g., Active Directory GPO).', 'MFA configuration reports.', 'A list of systems where MFA is enforced.', 'Penetration test results confirming no weak authentication.'] },
+            { id: 'A.8.6', title: 'Capacity management', theme: 'Technological', guidance: 'Monitor and project system capacity to ensure that the required performance and availability of information processing resources are maintained.', objective: 'To prevent service disruptions caused by a lack of system resources.', implementation: ['Implement tools to monitor key performance indicators (e.g., CPU, memory, disk space, network bandwidth).', 'Establish performance baselines and alert thresholds.', 'Analyze trends to predict future capacity needs.', 'Have a formal capacity planning process.'], evidence: ['Capacity management plan.', 'Performance monitoring reports and dashboards.', 'Alerts generated for capacity thresholds.', 'Records of capacity upgrades.'] },
+            { id: 'A.8.7', title: 'Protection against malware', theme: 'Technological', guidance: 'Implement preventative and detective controls to protect against malware across all affected assets, combined with user awareness.', objective: 'To prevent and detect malware infections and to recover from them.', implementation: ['Deploy and maintain endpoint protection/antivirus software on all servers and workstations.', 'Use email and web filtering to block malicious content.', 'Implement application whitelisting where feasible.', 'Regularly train users on how to identify and avoid malware.'], evidence: ['Configuration of antivirus/endpoint protection software.', 'Reports from the antivirus management console.', 'Configuration of email/web gateway security.', 'Security awareness training records on malware.'] },
+            { id: 'A.8.8', title: 'Management of technical vulnerabilities', theme: 'Technological', guidance: 'Establish a systematic process to identify, assess, and remediate technical vulnerabilities in a timely manner to prevent their exploitation.', objective: 'To reduce the attack surface by systematically finding and fixing weaknesses in systems before they can be exploited by attackers.', implementation: ['Implement a vulnerability scanning solution.', 'Define a risk-based process for prioritizing vulnerabilities (e.g., using CVSS).', 'Establish SLAs for patching based on vulnerability severity.', 'Track remediation efforts and manage exceptions.', 'Perform regular penetration testing to validate controls.'], evidence: ['Vulnerability management policy and procedures.', 'Vulnerability scan reports.', 'Patch management records and change logs.', 'Penetration testing reports and remediation tracking sheets.'] },
+            { id: 'A.8.9', title: 'Configuration management', theme: 'Technological', guidance: 'Establish, document, implement, monitor, and review configurations of hardware, software, services, and networks to ensure security.', objective: 'To prevent security weaknesses being introduced by insecure configurations and to maintain system integrity.', implementation: ['Develop secure configuration baselines or hardening guides for all key technologies.', 'Use automated tools to deploy and enforce these configurations.', 'Implement a change management process to control configuration changes.', 'Regularly scan for configuration drift and non-compliance.'], evidence: ['Secure configuration baseline documents (hardening guides).', 'Reports from configuration management/compliance scanning tools.', 'Change management records for configuration changes.', 'An up-to-date configuration management database (CMDB).'] },
+            { id: 'A.8.10', title: 'Information deletion', theme: 'Technological', guidance: 'Use appropriate mechanisms to securely delete information when it is no longer required, to prevent its recovery and ensure compliance with policies.', objective: 'To prevent the unauthorized disclosure of sensitive information from media that is no longer in use.', implementation: ['Implement secure data deletion tools and techniques that overwrite data.', 'Ensure deletion processes align with the records retention policy.', 'Verify that deletion is successful.', 'Address data deletion in cloud environments.'], evidence: ['Data deletion policy and procedure.', 'Logs from data wiping tools.', 'Certificates of destruction for media.', 'Cloud provider documentation on data deletion.'] },
+            { id: 'A.8.11', title: 'Data masking', theme: 'Technological', guidance: 'Use data masking, pseudonymization, or anonymization techniques to limit the exposure of sensitive data, especially in non-production environments.', objective: 'To protect sensitive data when it is used for purposes other than its primary use, such as testing or analysis.', implementation: ['Identify datasets that require masking (e.g., PII in test environments).', 'Select and implement appropriate data masking tools or scripts.', 'Ensure the masking process is irreversible where necessary (anonymization).', 'Control access to the original, unmasked data.'], evidence: ['Data masking policy or procedure.', 'A list of systems/databases where data masking is applied.', 'Scripts or tool configurations used for data masking.', 'Samples of masked data.'] },
+            { id: 'A.8.12', title: 'Data leakage prevention', theme: 'Technological', guidance: 'Apply data leakage prevention (DLP) measures to systems, networks, and end-user devices to detect and prevent the unauthorized disclosure of information.', objective: 'To detect and stop potential data breaches in real-time.', implementation: ['Deploy a Data Loss Prevention (DLP) solution.', 'Define DLP policies to identify and protect sensitive data based on classification.', 'Configure DLP to monitor channels like email, web, USB, and cloud.', 'Establish a process for reviewing and responding to DLP alerts.'], evidence: ['DLP policy and rule configuration.', 'Reports and dashboards from the DLP system.', 'Records of DLP incident investigation and response.', 'DLP system architecture diagram.'] },
+            { id: 'A.8.13', title: 'Information backup', theme: 'Technological', guidance: 'Take regular backups of information, software, and system images, and test them periodically to ensure they can be restored in case of data loss.', objective: 'To protect against data loss and to ensure that information can be recovered following a disaster or media failure.', implementation: ['Develop a backup policy defining scope, frequency, and retention.', 'Implement and automate a backup solution.', 'Store backups securely, with at least one copy off-site.', 'Regularly test the restoration process.'], evidence: ['Backup policy.', 'Backup job configurations and success/failure logs.', 'Records of backup restoration tests.', 'Off-site storage contract or configuration.'] },
+            { id: 'A.8.14', title: 'Redundancy of information processing facilities', theme: 'Technological', guidance: 'Design information processing facilities with sufficient redundancy to meet availability requirements and to avoid single points of failure.', objective: 'To ensure that the failure of a single component does not lead to a service outage.', implementation: ['Identify critical systems and single points of failure.', 'Implement redundant components (e.g., power supplies, network cards).', 'Use high-availability clustering for critical servers and applications.', 'Design for failover across multiple data centers or availability zones.'], evidence: ['System architecture diagrams showing redundancy and failover.', 'High-availability (HA) cluster configuration.', 'Results of failover tests.', 'Business Impact Analysis (BIA) defining availability requirements.'] },
+            { id: 'A.8.15', title: 'Logging', theme: 'Technological', guidance: 'Produce, protect, and regularly review logs of user activities, exceptions, faults, and information security events to assist in future investigations.', objective: 'To enable the detection of unauthorized activities, support incident investigations, and meet compliance requirements.', implementation: ['Define a logging policy specifying what events to log.', 'Centralize logs in a secure SIEM or log management system.', 'Protect logs from tampering or unauthorized access.', 'Regularly review logs or implement automated alerting.'], evidence: ['Logging policy.', 'Configuration of logging on systems and applications.', 'SIEM dashboards and alert configurations.', 'Records of log review activities.'] },
+            { id: 'A.8.16', title: 'Monitoring activities', theme: 'Technological', guidance: 'Monitor networks, systems, and applications to detect anomalous activities and potential information security incidents.', objective: 'To detect security breaches in a timely manner.', implementation: ['Deploy network and host-based intrusion detection systems (IDS/IPS).', 'Use a Security Information and Event Management (SIEM) system to correlate events.', 'Establish baselines of normal activity to help detect anomalies.', 'Develop a process for responding to monitoring alerts.'], evidence: ['System monitoring procedure.', 'Configuration of monitoring tools (IDS, SIEM).', 'Alerts generated by monitoring systems.', 'Incident reports that originated from monitoring alerts.'] },
+            { id: 'A.8.17', title: 'Clock synchronization', theme: 'Technological', guidance: 'Synchronize the clocks of all relevant information processing systems to a single reference time source to ensure accurate timestamps for event logging and correlation.', objective: 'To ensure that log entries from different systems can be accurately correlated during an investigation.', implementation: ['Use a reliable internal or external time source (NTP server).', 'Configure all systems, network devices, and applications to synchronize with the reference time source.', 'Monitor systems for clock drift.', 'Protect the time source from tampering.'], evidence: ['Clock synchronization policy.', 'Configuration of NTP on servers and network devices.', 'Logs showing successful time synchronization.', 'SIEM reports demonstrating correlated event times across multiple systems.'] },
+            { id: 'A.8.18', title: 'Use of privileged utility programs', theme: 'Technological', guidance: 'Restrict and tightly control the use of utility programs that can bypass system and application controls (e.g., debuggers, system editors).', objective: 'To prevent the misuse of powerful programs that could compromise system security.', implementation: ['Identify all privileged utility programs.', 'Restrict their installation and use to a small number of authorized administrators.', 'Monitor and log all use of these programs.', 'Use a PAM solution to manage access to these utilities.'], evidence: ['Policy on the use of utility programs.', 'A list of approved administrators for utility programs.', 'Audit logs showing the use of these programs.', 'Access control configurations restricting access to these programs.'] },
+            { id: 'A.8.19', title: 'Installation of software on operational systems', theme: 'Technological', guidance: 'Implement procedures to control the installation of software on operational systems to minimize security risks and maintain system stability.', objective: 'To prevent the installation of unauthorized or malicious software and to ensure system integrity.', implementation: ['Establish a formal change management process for software installation.', 'Restrict software installation privileges.', 'Use application whitelisting to allow only approved software to run.', 'Maintain a list of approved software.'], evidence: ['Change management procedure for software installation.', 'Application whitelisting rules and configuration.', 'A list of authorized software.', 'Records of change requests for software installation.'] },
+            { id: 'A.8.20', title: 'Network controls', theme: 'Technological', guidance: 'Manage and control networks to protect information in systems and applications, including network segregation and traffic filtering.', objective: 'To protect information as it travels across the network and to secure network services.', implementation: ['Implement firewalls to control traffic between network segments.', 'Use network access control (NAC) to authenticate devices connecting to the network.', 'Implement intrusion detection/prevention systems (IDS/IPS).', 'Securely configure all network devices (routers, switches).'], evidence: ['Network diagrams.', 'Firewall rule sets.', 'NAC configuration and policies.', 'Configuration files for network devices.'] },
+            { id: 'A.8.21', title: 'Security of network services', theme: 'Technological', guidance: 'Identify and implement security features, service levels, and management requirements for all network services, whether in-house or outsourced.', objective: 'To ensure that network services are provided securely and meet business requirements.', implementation: ['Document security requirements for all network services (e.g., DNS, DHCP, VPN).', 'Disable all insecure protocols (e.g., Telnet, unencrypted FTP).', 'Ensure network service agreements with third parties include security clauses.', 'Regularly review the security of network services.'], evidence: ['Security requirements for network services.', 'Network device configurations showing disabled insecure protocols.', 'Service level agreements (SLAs) with network service providers.', 'Vulnerability scan reports of network services.'] },
+            { id: 'A.8.22', title: 'Segregation of networks', theme: 'Technological', guidance: 'Divide large networks into smaller, isolated domains (segments) to limit the impact of a security compromise and to enforce access control.', objective: 'To prevent an attacker who compromises one part of the network from easily moving to other parts.', implementation: ['Implement network segmentation using VLANs and firewalls.', 'Create separate network zones for different purposes (e.g., DMZ, production, development, user networks).', 'Strictly control traffic between segments based on the principle of least privilege.', 'Segregate wireless networks from the internal wired network.'], evidence: ['Network diagram showing segmentation and zones.', 'Firewall rule sets controlling traffic between segments.', 'VLAN configuration on switches.', 'Penetration test results validating network segregation.'] },
+            { id: 'A.8.23', title: 'Web filtering', theme: 'Technological', guidance: 'Implement web filtering capabilities to manage users’ access to external websites and to protect systems from malware originating from malicious web content.', objective: 'To prevent users from accessing inappropriate or malicious websites and to reduce the risk of web-based malware infections.', implementation: ['Deploy a web filtering solution (e.g., a secure web gateway or proxy).', 'Define categories of websites to be blocked (e.g., gambling, malware, phishing).', 'Create policies for different user groups.', 'Log and review web traffic for suspicious activity.'], evidence: ['Web filtering policy.', 'Configuration of the web filtering solution, including blocked categories.', 'Reports from the web filter showing blocked sites and traffic analysis.', 'Procedure for requesting exceptions to the policy.'] },
+            { id: 'A.8.24', title: 'Use of cryptography', theme: 'Technological', guidance: 'Establish and implement a policy on the use of cryptographic controls to protect the confidentiality, integrity, and authenticity of information.', objective: 'To ensure the proper and effective use of cryptography to protect information.', implementation: ['Develop a cryptography policy specifying approved algorithms and key lengths.', 'Implement a process for cryptographic key management.', 'Use encryption for data at rest (e.g., disk encryption) and data in transit (e.g., TLS).', 'Restrict access to cryptographic keys.'], evidence: ['Cryptography policy.', 'Key management procedure.', 'System configurations showing encryption is enabled (e.g., for databases, laptops).', 'Certificate inventory.'] },
+            { id: 'A.8.25', title: 'Secure development life cycle', theme: 'Technological', guidance: 'Establish and apply rules for the secure development of software and systems throughout the entire lifecycle.', objective: 'To build security into software from the beginning, rather than trying to add it later.', implementation: ['Adopt a Secure Software Development Lifecycle (SSDLC) methodology.', 'Integrate security activities into each phase (requirements, design, coding, testing, deployment).', 'Train developers on secure coding practices.', 'Use automated security testing tools (SAST, DAST).'], evidence: ['Secure development policy and procedure (SSDLC).', 'Training records for developers.', 'Results from SAST and DAST scanning tools.', 'Security requirements included in design documents.'] },
+            { id: 'A.8.26', title: 'Application security requirements', theme: 'Technological', guidance: 'Define and document information security requirements at the initial stage of acquiring or developing new applications.', objective: 'To ensure that security is a fundamental part of all new applications.', implementation: ['Conduct a risk assessment for new applications to identify security needs.', 'Document security requirements covering topics like input validation, authentication, and logging.', 'Include these requirements in requests for proposals (RFPs) for purchased software.', 'Validate that requirements have been met during acceptance testing.'], evidence: ['A standard checklist of application security requirements.', 'Security requirements documented in project initiation or design documents.', 'RFP documents containing security requirements.', 'Acceptance testing reports that include security test cases.'] },
+            { id: 'A.8.27', title: 'Secure system architecture and engineering principles', theme: 'Technological', guidance: 'Establish, document, and apply principles for secure system engineering to build resilient and defensible systems.', objective: 'To ensure that security is a core component of system architecture and design.', implementation: ['Adopt secure design principles like defense-in-depth and secure defaults.', 'Create secure architecture patterns for common application types.', 'Conduct threat modeling exercises during the design phase.', 'Regularly review and update secure engineering principles.'], evidence: ['Documented secure engineering principles.', 'Threat modeling reports (e.g., using STRIDE).', 'Secure architecture diagrams and patterns.', 'Records of architecture security reviews.'] },
+            { id: 'A.8.28', title: 'Secure coding', theme: 'Technological', guidance: 'Apply secure coding principles to software development to reduce the number of potential security vulnerabilities in the software.', objective: 'To prevent common coding errors that lead to security vulnerabilities.', implementation: ['Establish secure coding standards (e.g., based on OWASP Top 10).', 'Train developers on these standards.', 'Use automated static analysis security testing (SAST) tools to find vulnerabilities in code.', 'Conduct peer code reviews with a focus on security.'], evidence: ['Secure coding standards document.', 'Developer training records.', 'SAST tool reports.', 'Code review checklists and records.'] },
+            { id: 'A.8.29', title: 'Security testing in development and acceptance', theme: 'Technological', guidance: 'Conduct security testing throughout the development lifecycle to identify and remediate vulnerabilities before systems go live.', objective: 'To find and fix security flaws before an application is deployed to production.', implementation: ['Integrate security testing into the CI/CD pipeline.', 'Perform dynamic analysis security testing (DAST) and interactive application security testing (IAST).', 'Conduct manual penetration testing for high-risk applications.', 'Track and remediate all identified vulnerabilities.'], evidence: ['Security testing plan.', 'DAST, IAST, and penetration testing reports.', 'A vulnerability tracking system showing remediation progress.', 'CI/CD pipeline configuration showing integrated security tests.'] },
+            { id: 'A.8.30', title: 'Outsourced development', theme: 'Technological', guidance: 'Supervise and monitor the activity of outsourced software development to ensure it complies with the organization’s secure development rules.', objective: 'To manage the risks associated with having external parties develop software.', implementation: ['Include secure development requirements in contracts with outsourced developers.', 'Provide suppliers with your secure coding standards.', 'Request and review evidence of security testing from the supplier.', 'Conduct independent security testing on the delivered software.'], evidence: ['Contracts with suppliers containing security requirements.', 'Records of security reviews of supplier processes.', 'Security testing reports provided by the supplier.', 'Independent penetration test reports on the outsourced application.'] },
+            { id: 'A.8.31', title: 'Separation of development, testing and production environments', theme: 'Technological', guidance: 'Separate development, testing, and production environments to reduce the risks of unauthorized access or changes to the production environment.', objective: 'To prevent accidental changes to the production environment and to protect production data.', implementation: ['Use physically or logically separate environments for development, testing, and production.', 'Implement strict access controls to prevent developers from accessing the production environment.', 'Prohibit the use of real production data in development or testing environments (or use masked data).', 'Use a formal process to promote code between environments.'], evidence: ['Network diagrams showing separate environments.', 'Access control rules for each environment.', 'Procedure for promoting code from test to production.', 'Data masking procedure for creating test data.'] },
+            { id: 'A.8.32', title: 'Change management', theme: 'Technological', guidance: 'Use formal change management procedures to control all changes to information processing facilities, business processes, systems, and software.', objective: 'To ensure that all changes are authorized, tested, and implemented in a way that minimizes the risk of security incidents or service disruptions.', implementation: ['Establish a formal change management policy and process.', 'Require all changes to be requested, reviewed, approved, and tested before implementation.', 'Create a Change Advisory Board (CAB) to review significant changes.', 'Maintain a log of all changes.'], evidence: ['Change management policy and procedure.', 'Completed change request forms with approvals.', 'CAB meeting minutes.', 'Change log or records from a change management system.'] },
+            { id: 'A.8.33', title: 'Test information', theme: 'Technological', guidance: 'Select test data carefully and protect it to prevent the leakage of sensitive production data into testing environments.', objective: 'To minimize the risk of compromising sensitive data by using it for testing purposes.', implementation: ['Prohibit the use of sensitive production data for testing wherever possible.', 'If production data must be used, ensure it is masked or anonymized first.', 'Apply appropriate access controls to the test environment to protect the test data.', 'Securely erase test data when it is no longer needed.'], evidence: ['Policy on the use of test data.', 'Data masking procedure.', 'Access control configuration for test environments.', 'Records of test data creation and deletion.'] },
+            { id: 'A.8.34', title: 'Protection of information systems during audit testing', theme: 'Technological', guidance: 'Plan and agree on audit tests to minimize the risk of disruption to operational systems. Access should be read-only where possible.', objective: 'To prevent security audits from negatively impacting the performance or availability of production systems.', implementation: ['Agree on the scope and timing of audit tests in advance.', 'Perform testing on test systems that mirror production where possible.', 'Grant auditors read-only access to production systems.', 'Monitor system performance during audit activities.'], evidence: ['Audit engagement letters or scope documents.', 'Agreements on audit testing procedures.', 'Access control logs showing read-only access for auditors.', 'System performance reports from the time of the audit.'] }
+        ].map(c => ({ 
+            ...c, 
+            status: 'Not Implemented', 
+            notes: '', 
+            evidenceLink: '',
+            actionItems: [] 
+        }));
+
+        // --- DOM Elements ---
+        const dom = {
+            controlsContainer: document.getElementById('controlsContainer'),
+            loadingSpinner: document.getElementById('loading'),
+            searchInput: document.getElementById('searchInput'),
+            statusFilter: document.getElementById('statusFilter'),
+            exportButton: document.getElementById('exportButton'),
+            resetButton: document.getElementById('resetButton'),
+            pdfButton: document.getElementById('pdfButton'),
+            soaButton: document.getElementById('soaButton'),
+            progressBar: document.getElementById('progressBar'),
+            progressText: document.getElementById('progressText'),
+            statsContainer: document.getElementById('statsContainer'),
+            chartCanvas: document.getElementById('complianceChart'),
+            backgroundWatermark: document.getElementById('background-watermark'),
+            modal: {
+                overlay: document.getElementById('confirmationModal'),
+                text: document.getElementById('modalText'),
+                confirm: document.getElementById('modalConfirm'),
+                cancel: document.getElementById('modalCancel'),
+                box: document.querySelector('#confirmationModal .modal-box')
+            },
+            clientModal: {
+                overlay: document.getElementById('clientNameModal'),
+                title: document.getElementById('clientNameTitle'),
+                input: document.getElementById('clientNameInput'),
+                generate: document.getElementById('clientNameGenerate'),
+                cancel: document.getElementById('clientNameCancel'),
+                box: document.querySelector('#clientNameModal .modal-box')
+            },
+            soaEditor: {
+                overlay: document.getElementById('soaEditorModal'),
+                box: document.querySelector('#soaEditorModal .modal-box'),
+                tableContainer: document.getElementById('soaEditorTableContainer'),
+                generateBtn: document.getElementById('soaEditorGenerate'),
+                cancelBtn: document.getElementById('soaEditorCancel'),
+            },
+            toast: {
+                element: document.getElementById('toast'),
+                text: document.getElementById('toastText')
+            },
+            bulk: {
+                bar: document.getElementById('bulkActionBar'),
+                count: document.getElementById('bulkCount'),
+                status: document.getElementById('bulkStatus'),
+                apply: document.getElementById('bulkApply'),
+                cancel: document.getElementById('bulkCancel')
+            }
+        };
+
+        // --- STATE & STORAGE ---
+        let state = [];
+        let complianceChartInstance = null;
+        let selectedControls = new Set();
+        const STORAGE_KEY = 'iso27001_checklist_marsellino_nasry_v5'; // Incremented version to avoid conflicts
+
+        function loadState() {
+            const savedState = localStorage.getItem(STORAGE_KEY);
+            if (savedState) {
+                const parsedState = JSON.parse(savedState);
+                state = controlsData.map(defaultControl => {
+                    const savedControl = parsedState.find(c => c.id === defaultControl.id);
+                    if (savedControl && !Array.isArray(savedControl.actionItems)) {
+                        savedControl.actionItems = [];
+                    }
+                    return savedControl ? { ...defaultControl, ...savedControl } : defaultControl;
+                });
+            } else {
+                state = JSON.parse(JSON.stringify(controlsData));
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+        
+        // --- UI/Modal/Toast Functions ---
+        function showToast(message, isError = false) {
+            dom.toast.text.textContent = message;
+            dom.toast.element.className = `toast fixed bottom-5 right-5 text-white py-2 px-5 rounded-lg shadow-lg ${isError ? 'bg-red-600' : 'bg-emerald-500'}`;
+            dom.toast.element.classList.remove('opacity-0', 'translate-y-3');
+            setTimeout(() => { dom.toast.element.classList.add('opacity-0', 'translate-y-3'); }, 4000);
+        }
+
+        function showModal(text, onConfirm) {
+            dom.modal.text.textContent = text;
+            dom.modal.overlay.classList.remove('hidden');
+            setTimeout(() => { dom.modal.box.classList.remove('scale-95', 'opacity-0'); }, 10);
+            
+            const newConfirm = dom.modal.confirm.cloneNode(true);
+            dom.modal.confirm.parentNode.replaceChild(newConfirm, dom.modal.confirm);
+            dom.modal.confirm = newConfirm;
+            
+            dom.modal.confirm.onclick = () => { onConfirm(); hideModal(); };
+        }
+
+        function hideModal() {
+            dom.modal.box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { dom.modal.overlay.classList.add('hidden'); }, 300);
+        }
+        dom.modal.cancel.addEventListener('click', hideModal);
+
+        function showClientNameModal(title, callback) {
+            dom.clientModal.title.textContent = title;
+            dom.clientModal.overlay.classList.remove('hidden');
+            setTimeout(() => { dom.clientModal.box.classList.remove('scale-95', 'opacity-0'); }, 10);
+            dom.clientModal.input.value = '';
+            dom.clientModal.input.focus();
+
+            const generateHandler = () => {
+                const clientName = dom.clientModal.input.value.trim() || '[Not Specified]';
+                callback(clientName);
+                hideClientNameModal();
+            };
+
+            const newGenerate = dom.clientModal.generate.cloneNode(true);
+            dom.clientModal.generate.parentNode.replaceChild(newGenerate, dom.clientModal.generate);
+            dom.clientModal.generate = newGenerate;
+
+            dom.clientModal.generate.addEventListener('click', generateHandler);
+        }
+
+        function hideClientNameModal() {
+            dom.clientModal.box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { dom.clientModal.overlay.classList.add('hidden'); }, 300);
+        }
+        dom.clientModal.cancel.addEventListener('click', hideClientNameModal);
+
+
+        // --- RENDERING ---
+        function renderControls() {
+            const searchTerm = dom.searchInput.value.toLowerCase();
+            const selectedStatus = dom.statusFilter.value;
+            const filteredControls = state.filter(c => (c.id.toLowerCase().includes(searchTerm) || c.title.toLowerCase().includes(searchTerm) || c.guidance.toLowerCase().includes(searchTerm)) && (selectedStatus === 'all' || c.status === selectedStatus));
+            
+            dom.controlsContainer.innerHTML = ''; // Clear container before rendering
+            if (filteredControls.length === 0) {
+                 dom.controlsContainer.innerHTML = `<div class="text-center py-10 bg-slate-900 rounded-lg border border-slate-800"><p class="text-slate-400 text-lg">No controls match criteria.</p></div>`;
+                 return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            let currentTheme = '';
+            filteredControls.forEach(control => {
+                if (control.theme !== currentTheme) {
+                    currentTheme = control.theme;
+                    let themeIcon = 'fa-building-shield';
+                    if (currentTheme === 'People') themeIcon = 'fa-users';
+                    if (currentTheme === 'Physical') themeIcon = 'fa-door-closed';
+                    if (currentTheme === 'Technological') themeIcon = 'fa-laptop-code';
+                    const themeHeader = document.createElement('h2');
+                    themeHeader.className = 'text-2xl font-bold text-sky-400 pb-2 border-b-2 border-slate-700 mt-8 mb-4';
+                    themeHeader.innerHTML = `<i class="fas ${themeIcon} mr-3"></i> Annex A: ${currentTheme} Controls`;
+                    fragment.appendChild(themeHeader);
+                }
+                const controlElement = createControlElement(control);
+                fragment.appendChild(controlElement);
+            });
+            dom.controlsContainer.appendChild(fragment);
+        }
+
+        function createControlElement(control) {
+            const statusColors = { 'Not Implemented': 'bg-red-500', 'In Progress': 'bg-yellow-500', 'Implemented': 'bg-green-500', 'N/A': 'bg-gray-500' };
+            const element = document.createElement('div');
+            element.className = 'control-card bg-slate-800 border border-slate-700 rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:border-sky-500/80';
+            element.dataset.id = control.id;
+            element.innerHTML = `
+                <div class="p-4 flex items-center space-x-4">
+                    <input type="checkbox" class="bulk-checkbox h-5 w-5 rounded bg-slate-700 border-slate-600 text-sky-500 focus:ring-sky-500" ${selectedControls.has(control.id) ? 'checked' : ''}>
+                    <div class="flex-1 min-w-0 accordion-toggle cursor-pointer flex justify-between items-center">
+                        <div class="flex items-center min-w-0">
+                            <span class="status-indicator w-3 h-3 ${statusColors[control.status]} rounded-full mr-4 flex-shrink-0"></span>
+                            <h3 class="font-bold text-lg text-white truncate">${control.id}: ${control.title}</h3>
+                        </div>
+                        <i class="fas fa-chevron-down text-slate-400 expand-icon transition-transform"></i>
+                    </div>
+                </div>
+                <div class="accordion-content bg-slate-800/50">
+                    <div class="border-t border-slate-700 pt-4 flex space-x-1 mb-4">
+                        <button class="tab-button px-4 py-2 text-sm font-medium rounded-t-md text-slate-300 hover:bg-slate-700 transition active" data-tab="guidance">Guidance</button>
+                        <button class="tab-button px-4 py-2 text-sm font-medium rounded-t-md text-slate-300 hover:bg-slate-700 transition" data-tab="implementation">Implementation</button>
+                        <button class="tab-button px-4 py-2 text-sm font-medium rounded-t-md text-slate-300 hover:bg-slate-700 transition" data-tab="actions">Notes & Actions</button>
+                    </div>
+                    <div class="tab-content-container">
+                        <div data-tab-content="guidance">
+                             <p>${control.guidance}</p>
+                             <h5 class="font-semibold text-white mt-3 mb-1">Objective:</h5><p class="text-slate-400">${control.objective}</p>
+                        </div>
+                        <div data-tab-content="implementation" class="hidden">
+                            <h5 class="font-semibold text-white mb-2">Key Implementation Steps:</h5><ul class="list-disc list-inside space-y-1 text-slate-400">${control.implementation.map(i => `<li>${i}</li>`).join('')}</ul>
+                            <h5 class="font-semibold text-white mt-4 mb-2">Common Evidence Artifacts:</h5><ul class="list-disc list-inside space-y-1 text-slate-400">${control.evidence.map(e => `<li>${e}</li>`).join('')}</ul>
+                        </div>
+                        <div data-tab-content="actions" class="hidden space-y-4">
+                            <div><label class="block text-sm font-medium text-slate-400 mb-1">Status</label><select class="status-selector w-full bg-slate-700 border border-slate-600 rounded-md py-1.5 px-3 text-sm text-white focus:ring-2 focus:ring-sky-500">${Object.keys(statusColors).map(s=>`<option value="${s}" ${control.status===s ? 'selected':''}>${s}</option>`).join('')}</select></div>
+                            <div><label class="block text-sm font-medium text-slate-400 mb-1">Evidence Link (URL)</label><input type="url" class="evidence-link w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-slate-200 focus:ring-2 focus:ring-sky-500" placeholder="https://sharepoint.com/evidence/doc.pdf" value="${control.evidenceLink || ''}"></div>
+                            <div><label class="block text-sm font-medium text-slate-400 mb-1">Notes / Justification for N/A</label><textarea class="notes-area w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-slate-200 h-24 focus:ring-2 focus:ring-sky-500" placeholder="Document implementation details...">${control.notes}</textarea></div>
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <h5 class="font-semibold text-white">Action Items</h5>
+                                    <button class="add-action-item px-3 py-1 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-md transition"><i class="fas fa-plus mr-1"></i> Add Item</button>
+                                </div>
+                                <div class="action-items-container space-y-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            renderActionItems(control, element.querySelector('.action-items-container'));
+            return element;
+        }
+
+        function renderActionItems(control, container) {
+            container.innerHTML = '';
+            if (!control.actionItems || control.actionItems.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-500 italic">No action items.</p>';
+                return;
+            }
+            control.actionItems.forEach((item, index) => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'grid grid-cols-1 md:grid-cols-8 gap-2 items-center bg-slate-900/50 p-2 rounded-md';
+                itemEl.innerHTML = `
+                    <div class="md:col-span-4"><input type="text" class="action-item-desc w-full text-sm bg-slate-700 border-slate-600 rounded p-1" data-index="${index}" placeholder="Description" value="${item.description || ''}"></div>
+                    <div class="md:col-span-2"><input type="text" class="action-item-assignee w-full text-sm bg-slate-700 border-slate-600 rounded p-1" data-index="${index}" placeholder="Assignee" value="${item.assignedTo || ''}"></div>
+                    <div class="md:col-span-1"><input type="date" class="action-item-due w-full text-sm bg-slate-700 border-slate-600 rounded p-1" data-index="${index}" value="${item.dueDate || ''}"></div>
+                    <div class="text-right"><button class="delete-action-item text-red-500 hover:text-red-400" data-index="${index}"><i class="fas fa-trash"></i></button></div>`;
+                container.appendChild(itemEl);
+            });
+        }
+        
+        // --- DASHBOARD & REPORTING ---
+        function updateDashboard() {
+            const counts = { 'Implemented': 0, 'In Progress': 0, 'Not Implemented': 0, 'N/A': 0 };
+            state.forEach(c => counts[c.status]++);
+
+            const totalApplicable = state.length - counts['N/A'];
+            const percentage = totalApplicable > 0 ? (counts['Implemented'] / totalApplicable * 100) : 0;
+            
+            dom.progressBar.style.width = `${percentage}%`;
+            dom.progressText.textContent = `${percentage.toFixed(0)}% (${counts['Implemented']}/${totalApplicable})`;
+
+            dom.statsContainer.innerHTML = `
+                <div class="bg-green-500/10 p-3 rounded-lg border border-green-500/30"><div class="text-2xl font-bold text-white">${counts['Implemented']}</div><div class="text-sm text-green-400">Implemented</div></div>
+                <div class="bg-yellow-500/10 p-3 rounded-lg border border-yellow-500/30"><div class="text-2xl font-bold text-white">${counts['In Progress']}</div><div class="text-sm text-yellow-400">In Progress</div></div>
+                <div class="bg-red-500/10 p-3 rounded-lg border border-red-500/30"><div class="text-2xl font-bold text-white">${counts['Not Implemented']}</div><div class="text-sm text-red-400">Not Implemented</div></div>
+                <div class="bg-gray-500/10 p-3 rounded-lg border border-gray-500/30"><div class="text-2xl font-bold text-white">${counts['N/A']}</div><div class="text-sm text-gray-400">Not Applicable</div></div>`;
+            
+            updateDashboardChart(counts);
+        }
+
+        function updateDashboardChart(counts) {
+            const chartData = {
+                labels: ['Implemented', 'In Progress', 'Not Implemented', 'N/A'],
+                datasets: [{
+                    data: [counts['Implemented'], counts['In Progress'], counts['Not Implemented'], counts['N/A']],
+                    backgroundColor: ['#22c55e', '#eab308', '#ef4444', '#6b7280'],
+                    borderColor: '#0f172a',
+                    borderWidth: 2,
+                }]
+            };
+            if (complianceChartInstance) {
+                complianceChartInstance.data = chartData;
+                complianceChartInstance.update();
+            } else {
+                complianceChartInstance = new Chart(dom.chartCanvas, {
+                    type: 'doughnut',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'right', labels: { color: '#cbd5e1' } }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // --- PDF Generation Functions (REBUILT FOR RELIABILITY) ---
+
+        function addPdfFooter(doc) {
+            const pageCount = doc.internal.getNumberOfPages();
+            const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
+            const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(8);
+            doc.setTextColor(128, 128, 128);
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                doc.text(`Generated by Marsellino Nasry's Platform`, 14, pageHeight - 10);
+            }
+        }
+
+        function addPdfWatermark(doc) {
+            const pageCount = doc.internal.getNumberOfPages();
+            const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
+            const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+            
+            // Set watermark properties
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(72);
+            doc.setTextColor(235, 235, 235); // Very light gray for watermark
+            
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                // Use the built-in text rotation feature, which is more reliable than saveState/restoreState
+                doc.text(
+                    "Marsellino Nasry", 
+                    pageWidth / 2, 
+                    pageHeight / 2, 
+                    { align: 'center', angle: -45, baseline: 'middle' }
+                );
+            }
+            // Reset text color for the actual content
+            doc.setTextColor(51, 65, 85); 
+        }
+
+        function triggerDownload(doc, fileName) {
+            try {
+                // Use the blob method for reliable downloads
+                const pdfBlob = doc.output('blob');
+                const blobUrl = URL.createObjectURL(pdfBlob);
+
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Clean up the blob URL
+                URL.revokeObjectURL(blobUrl);
+                showToast('PDF generated and downloading!');
+
+            } catch(e) {
+                console.error("Blob download failed, falling back to doc.save()", e);
+                showToast(`Download failed: ${e.message}. Trying fallback.`, true);
+                // Fallback for older browsers or environments where blob creation might fail
+                doc.save(fileName);
+            }
+        }
+
+        function generatePDFReport(clientName) {
+            try {
+                if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+                    showToast('Error: Core PDF library (jsPDF) not loaded.', true);
+                    return;
+                }
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                if (typeof doc.autoTable !== 'function') {
+                    showToast('Error: PDF table plugin (jsPDF-AutoTable) not loaded.', true);
+                    console.error("jsPDF-AutoTable is not available. Check the library script include.");
+                    return;
+                }
+
+                const today = new Date().toLocaleDateString();
+                const findings = state.filter(c => c.status === 'Not Implemented' || c.status === 'In Progress');
+                const fileName = `ISO27001_Report_${clientName.replace(/\s/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`;
+
+                // Cover Page
+                doc.setFontSize(22).setFont('helvetica', 'bold');
+                doc.text('ISO 27001:2022 Compliance Report', 105, 40, { align: 'center' });
+                doc.setFontSize(16).setFont('helvetica', 'normal');
+                doc.text(`Generated for: ${clientName}`, 105, 60, { align: 'center' });
+                doc.text(`Date: ${today}`, 105, 70, { align: 'center' });
+                if (complianceChartInstance) {
+                    doc.addImage(complianceChartInstance.toBase64Image(), 'PNG', 40, 90, 130, 130);
+                }
+                
+                // Findings Summary Page
+                if(findings.length > 0) {
+                    doc.addPage();
+                    doc.setFontSize(18).setFont('helvetica', 'bold');
+                    doc.text('Summary of Findings (Not Implemented / In Progress)', 14, 22);
+                    doc.autoTable({
+                        startY: 30,
+                        head: [['Control ID', 'Title', 'Status', 'Notes']],
+                        body: findings.map(c => [c.id, c.title, c.status, (c.notes || 'N/A').replace(/[\u2018\u2019]/g, "'")]),
+                        theme: 'striped',
+                        headStyles: { fillColor: [41, 128, 185] },
+                    });
+                } else {
+                     doc.addPage();
+                     doc.setFontSize(18).setFont('helvetica', 'bold');
+                     doc.text('Summary of Findings', 14, 22);
+                     doc.setFontSize(12).setFont('helvetica', 'normal');
+                     doc.text('No outstanding findings were identified.', 14, 32);
+                }
+
+                addPdfWatermark(doc);
+                addPdfFooter(doc);
+                
+                triggerDownload(doc, fileName);
+            } catch (error) {
+                console.error("Failed to generate PDF report:", error);
+                showToast(`Error creating report: ${error.message}`, true);
+            }
+        }
+
+        function openSoaEditor(clientName) {
+            const tableBody = state.map(control => {
+                const isApplicable = control.status !== 'N/A';
+                const justification = isApplicable ? (control.notes || 'Implemented as per information security policy.') : (control.notes || 'This control is not applicable to the scope of the ISMS.');
+                return `
+                    <tr class="border-b border-slate-700 hover:bg-slate-700/50" data-id="${control.id}">
+                        <td class="p-2 text-sm align-top">${control.id}</td>
+                        <td class="p-2 text-sm align-top">${control.title}</td>
+                        <td class="p-2 align-top">
+                            <select class="soa-applicable w-full bg-slate-600 border border-slate-500 rounded p-1 text-sm">
+                                <option value="Yes" ${isApplicable ? 'selected' : ''}>Yes</option>
+                                <option value="No" ${!isApplicable ? 'selected' : ''}>No</option>
+                            </select>
+                        </td>
+                        <td class="p-2 align-top">
+                            <textarea class="soa-justification w-full bg-slate-600 border border-slate-500 rounded p-1 text-sm h-20">${justification}</textarea>
+                        </td>
+                    </tr>`;
+            }).join('');
+
+            dom.soaEditor.tableContainer.innerHTML = `
+                <table id="soaEditorTable" class="w-full text-left table-fixed">
+                    <thead class="text-xs text-slate-300 uppercase">
+                        <tr>
+                            <th class="p-2 w-[10%]">ID</th>
+                            <th class="p-2 w-[30%]">Control</th>
+                            <th class="p-2 w-[10%]">Applicable</th>
+                            <th class="p-2 w-[50%]">Justification/Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableBody}</tbody>
+                </table>`;
+
+            dom.soaEditor.overlay.classList.remove('hidden');
+            setTimeout(() => dom.soaEditor.box.classList.remove('scale-95', 'opacity-0'), 10);
+
+            // Re-bind event listener to avoid multiple fires
+            const newGenerateBtn = dom.soaEditor.generateBtn.cloneNode(true);
+            dom.soaEditor.generateBtn.parentNode.replaceChild(newGenerateBtn, dom.soaEditor.generateBtn);
+            dom.soaEditor.generateBtn = newGenerateBtn;
+            
+            dom.soaEditor.generateBtn.addEventListener('click', () => generateEditedSoA(clientName));
+        }
+
+        function hideSoaEditor() {
+            dom.soaEditor.box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => dom.soaEditor.overlay.classList.add('hidden'), 300);
+        }
+        dom.soaEditor.cancelBtn.addEventListener('click', hideSoaEditor);
+
+        function generateEditedSoA(clientName) {
+            try {
+                if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+                    showToast('Error: PDF generation libraries not loaded.', true);
+                    return;
+                }
+                
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+
+                if (typeof doc.autoTable !== 'function') {
+                    showToast('Error: PDF table plugin (jsPDF-AutoTable) not loaded.', true);
+                    console.error("jsPDF-AutoTable is not available. Check the library script include.");
+                    return;
+                }
+                
+                const today = new Date().toLocaleDateString();
+                const fileName = `SoA_${clientName.replace(/\s/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`;
+
+                // Scrape the data directly from the modal's table at the time of generation
+                const tableRows = dom.soaEditor.tableContainer.querySelectorAll('tbody tr');
+                const soaBody = Array.from(tableRows).map(row => {
+                    const id = row.dataset.id;
+                    const title = state.find(c => c.id === id)?.title || 'Unknown';
+                    const applicable = row.querySelector('.soa-applicable').value;
+                    const justification = row.querySelector('.soa-justification').value;
+                    return [id, title, applicable, justification.replace(/[\u2018\u2019]/g, "'")];
+                });
+                
+                doc.setFontSize(22).setFont('helvetica', 'bold');
+                doc.text('Statement of Applicability (SoA)', doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+                doc.setFontSize(12).setFont('helvetica', 'normal');
+                doc.text(`Based on ISO/IEC 27001:2022`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
+                doc.text(`Client: ${clientName}`, doc.internal.pageSize.getWidth() / 2, 36, { align: 'center' });
+                doc.text(`Date: ${today}`, doc.internal.pageSize.getWidth() / 2, 44, { align: 'center' });
+
+                doc.autoTable({
+                    startY: 55,
+                    head: [['ID', 'Control', 'Applicable', 'Justification/Implementation Notes']],
+                    body: soaBody,
+                    theme: 'grid',
+                    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+                    columnStyles: { 
+                        0: { cellWidth: 18 },
+                        1: { cellWidth: 55 },
+                        2: { cellWidth: 22 },
+                        3: { cellWidth: 'auto' }
+                    },
+                });
+
+                addPdfWatermark(doc);
+                addPdfFooter(doc);
+                
+                triggerDownload(doc, fileName);
+                hideSoaEditor();
+
+            } catch (error) {
+                console.error("Failed to generate SoA PDF:", error);
+                showToast(`Error creating SoA: ${error.message}`, true);
+            }
+        }
+        
+        function exportToExcel() {
+            const dataToExport = state.map(c => {
+                const actionItems = (c.actionItems || []).map(item => `Desc: ${item.description || ''}, Assignee: ${item.assignedTo || ''}, Due: ${item.dueDate || ''}`).join('; ');
+                return {
+                    'Control ID': c.id,
+                    'Theme': c.theme,
+                    'Title': c.title,
+                    'Status': c.status,
+                    'Notes/Justification': c.notes,
+                    'Evidence Link': c.evidenceLink,
+                    'Action Items': actionItems,
+                    'Guidance': c.guidance,
+                    'Objective': c.objective
+                };
+            });
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            worksheet['!cols'] = [ {wch:10}, {wch:15}, {wch:50}, {wch:20}, {wch:60}, {wch:40}, {wch:60}, {wch:80}, {wch:80} ];
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'ISO 27001 Checklist');
+            XLSX.writeFile(workbook, `ISO27001_Full_Export_Marsellino_Nasry_${new Date().toISOString().slice(0,10)}.xlsx`);
+            showToast('Full data exported to Excel!');
+        }
+
+        // --- BACKGROUND CANVAS WATERMARK ---
+        function drawWatermark() {
+            const canvas = dom.backgroundWatermark;
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            ctx.font = 'bold 8vw Inter, sans-serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const text = 'Marsellino Nasry';
+            const x = canvas.width / 2;
+            const y = canvas.height / 2;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(-Math.PI / 12);
+            ctx.fillText(text, 0, 0);
+            ctx.restore();
+        }
+
+        // --- EVENT HANDLERS ---
+        function handleControlInteraction(e) {
+            const card = e.target.closest('.control-card');
+            if (!card) return;
+            const controlId = card.dataset.id;
+            const control = state.find(c => c.id === controlId);
+            if (!control) return;
+
+            const classList = e.target.classList;
+            if (e.target.closest('.accordion-toggle')) {
+                card.querySelector('.accordion-content').classList.toggle('open');
+                card.querySelector('.expand-icon').classList.toggle('rotate-180');
+            } else if (classList.contains('tab-button')) {
+                card.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                card.querySelectorAll('[data-tab-content]').forEach(c => c.classList.add('hidden'));
+                card.querySelector(`[data-tab-content="${e.target.dataset.tab}"]`).classList.remove('hidden');
+            } else if (classList.contains('status-selector')) {
+                control.status = e.target.value;
+                card.querySelector('.status-indicator').className = `status-indicator w-3 h-3 ${{'Not Implemented':'bg-red-500','In Progress':'bg-yellow-500','Implemented':'bg-green-500','N/A':'bg-gray-500'}[e.target.value]} rounded-full mr-4 flex-shrink-0`;
+                updateDashboard();
+                saveState();
+            } else if (classList.contains('bulk-checkbox')) {
+                if (e.target.checked) selectedControls.add(controlId);
+                else selectedControls.delete(controlId);
+                updateBulkActionBar();
+            } else if (classList.contains('add-action-item')) {
+                if (!Array.isArray(control.actionItems)) control.actionItems = [];
+                control.actionItems.push({ id: crypto.randomUUID(), description: '', assignedTo: '', dueDate: '', completed: false });
+                renderActionItems(control, card.querySelector('.action-items-container'));
+                saveState();
+            } else if (e.target.closest('.delete-action-item')) {
+                const index = e.target.closest('.delete-action-item').dataset.index;
+                control.actionItems.splice(index, 1);
+                renderActionItems(control, card.querySelector('.action-items-container'));
+                saveState();
+            } else if (['notes-area', 'evidence-link', 'action-item-desc', 'action-item-assignee', 'action-item-due'].some(c => classList.contains(c))) {
+                // Use a debounce to avoid saving on every keystroke
+                clearTimeout(e.target.debounceTimer);
+                e.target.debounceTimer = setTimeout(() => {
+                    if (classList.contains('notes-area')) control.notes = e.target.value;
+                    else if (classList.contains('evidence-link')) control.evidenceLink = e.target.value;
+                    else {
+                        const index = e.target.dataset.index;
+                        if (classList.contains('action-item-desc')) control.actionItems[index].description = e.target.value;
+                        else if (classList.contains('action-item-assignee')) control.actionItems[index].assignedTo = e.target.value;
+                        else if (classList.contains('action-item-due')) control.actionItems[index].dueDate = e.target.value;
+                    }
+                    saveState();
+                }, 400);
+            }
+        }
+        
+        function updateBulkActionBar() {
+            if (selectedControls.size > 0) {
+                dom.bulk.count.textContent = `${selectedControls.size} items selected`;
+                dom.bulk.bar.classList.remove('translate-y-full');
+            } else {
+                dom.bulk.bar.classList.add('translate-y-full');
+            }
+        }
+
+        // --- INITIALIZATION ---
+        function init() {
+            dom.loadingSpinner.style.display = 'block';
+            dom.controlsContainer.innerHTML = '';
+            
+            setTimeout(() => {
+                loadState();
+                renderControls();
+                updateDashboard();
+                drawWatermark();
+                window.addEventListener('resize', drawWatermark);
+                dom.loadingSpinner.style.display = 'none';
+
+                // --- Attach all event listeners ---
+                dom.searchInput.addEventListener('input', renderControls);
+                dom.statusFilter.addEventListener('change', renderControls);
+                dom.controlsContainer.addEventListener('click', handleControlInteraction);
+                dom.controlsContainer.addEventListener('input', handleControlInteraction);
+                dom.exportButton.addEventListener('click', exportToExcel);
+                dom.resetButton.addEventListener('click', () => {
+                    showModal("Are you sure? This will reset all statuses and notes.", () => {
+                        localStorage.removeItem(STORAGE_KEY);
+                        showToast('Platform has been reset.');
+                        setTimeout(() => location.reload(), 1000);
+                    });
+                });
+                dom.pdfButton.addEventListener('click', () => showClientNameModal('Generate Summary Report', generatePDFReport));
+                dom.soaButton.addEventListener('click', () => showClientNameModal('Generate Statement of Applicability', openSoaEditor));
+
+                dom.bulk.apply.addEventListener('click', () => {
+                    const newStatus = dom.bulk.status.value;
+                    selectedControls.forEach(id => {
+                        const control = state.find(c => c.id === id);
+                        if (control) control.status = newStatus;
+                    });
+                    saveState();
+                    renderControls();
+                    updateDashboard();
+                    showToast(`${selectedControls.size} items updated.`);
+                    selectedControls.clear();
+                    updateBulkActionBar();
+                });
+
+                dom.bulk.cancel.addEventListener('click', () => {
+                    selectedControls.clear();
+                    document.querySelectorAll('.bulk-checkbox:checked').forEach(cb => cb.checked = false);
+                    updateBulkActionBar();
+                });
+
+            }, 500);
+        }
+        
+        init();
+    });
+    </script>
+
+</body>
+</html>
